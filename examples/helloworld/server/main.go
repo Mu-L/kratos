@@ -14,7 +14,6 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/status"
-	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -35,36 +34,12 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	return &pb.HelloReply{Message: fmt.Sprintf("Hello %+v", in)}, nil
 }
 
-func loggerInfo(logger log.Logger) middleware.Middleware {
-	log := log.NewHelper("logger2", logger)
-	return func(handler middleware.Handler) middleware.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-
-			tr, ok := transport.FromContext(ctx)
-			if ok {
-				log.Infof("transport: %+v", tr)
-			}
-			h, ok := http.FromContext(ctx)
-			if ok {
-				log.Infof("http: [%s] %s", h.Request.Method, h.Request.URL.Path)
-			}
-			g, ok := grpc.FromContext(ctx)
-			if ok {
-				log.Infof("grpc: %s", g.FullMethod)
-			}
-
-			return handler(ctx, req)
-		}
-	}
-}
-
 func main() {
 	logger := stdlog.NewLogger(stdlog.Writer(os.Stdout))
 	defer logger.Close()
 
 	log := log.NewHelper("main", logger)
 
-	s := &server{}
 	app := kratos.New()
 
 	httpSrv := http.NewServer(
@@ -85,6 +60,7 @@ func main() {
 			),
 		))
 
+	s := &server{}
 	pb.RegisterGreeterServer(grpcSrv, s)
 	pb.RegisterGreeterHTTPServer(httpSrv, s)
 
