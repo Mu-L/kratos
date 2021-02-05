@@ -9,6 +9,7 @@ import (
 	config "github.com/go-kratos/kratos/v2/api/kratos/config/http"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
+
 	"github.com/gorilla/mux"
 )
 
@@ -114,14 +115,12 @@ func NewServer(opts ...ServerOption) *Server {
 	for _, o := range opts {
 		o(&options)
 	}
-	router := mux.NewRouter()
-	return &Server{
+	srv := &Server{
 		opts:   options,
-		router: router,
-		Server: &http.Server{
-			Handler: router,
-		},
+		router: mux.NewRouter(),
 	}
+	srv.Server = &http.Server{Handler: srv}
+	return srv
 }
 
 // Route .

@@ -99,10 +99,16 @@ func NewServer(opts ...ServerOption) *Server {
 	}
 	var grpcOpts = []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
-			options.interceptor,
 			UnaryServerInterceptor(options.middleware),
 			UnaryTimeoutInterceptor(options.timeout),
 		),
+	}
+	if options.interceptor != nil {
+		grpcOpts = append(grpcOpts, grpc.ChainUnaryInterceptor(
+			options.interceptor,
+			UnaryServerInterceptor(options.middleware),
+			UnaryTimeoutInterceptor(options.timeout),
+		))
 	}
 	if len(options.grpcOpts) > 0 {
 		grpcOpts = append(grpcOpts, options.grpcOpts...)
