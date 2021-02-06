@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,6 +34,10 @@ type App struct {
 // New create an application lifecycle manager.
 func New(opts ...Option) *App {
 	options := options{
+		id:           os.Getenv("KRATOS_SERVICE_ID"),
+		name:         os.Getenv("KRATOS_SERVICE_NAME"),
+		version:      os.Getenv("KRATOS_SERVICE_VERSION"),
+		endpoints:    strings.Split(os.Getenv("KRATOS_SERVICE_ENDPOINTS"), ","),
 		startTimeout: time.Second * 30,
 		stopTimeout:  time.Second * 30,
 		sigs: []os.Signal{
