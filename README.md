@@ -85,5 +85,9 @@ make test
 * [Discord Group](https://discord.gg/BWzJsUJ)
 * QQ Group: 716486124
 
+## Sponsors and Backers
+
+![kratos](docs/images/alipay.png =560x400)
+
 ## License
 Kratos is MIT licensed. See the [LICENSE](./LICENSE) file for details.
