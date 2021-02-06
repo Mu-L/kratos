@@ -1,10 +1,12 @@
 package kratos
 
 import (
+	"context"
 	"os"
-	"time"
 
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/registry"
+	"github.com/go-kratos/kratos/v2/transport"
 )
 
 // Option is an application option.
@@ -18,13 +20,12 @@ type options struct {
 	metadata  map[string]string
 	endpoints []string
 
+	ctx  context.Context
+	sigs []os.Signal
+
+	logger   log.Logger
 	registry registry.Registry
-
-	startTimeout time.Duration
-	stopTimeout  time.Duration
-
-	sigs  []os.Signal
-	sigFn func(*App, os.Signal)
+	servers  []transport.Server
 }
 
 // ID with service id.
@@ -47,9 +48,24 @@ func Metadata(md map[string]string) Option {
 	return func(o *options) { o.metadata = md }
 }
 
-// Endpoints with service endpoint.
-func Endpoints(endpoints []string) Option {
+// Endpoint with service endpoint.
+func Endpoint(endpoints ...string) Option {
 	return func(o *options) { o.endpoints = endpoints }
+}
+
+// Context with service context.
+func Context(ctx context.Context) Option {
+	return func(o *options) { o.ctx = ctx }
+}
+
+// Signal with exit signals.
+func Signal(sigs ...os.Signal) Option {
+	return func(o *options) { o.sigs = sigs }
+}
+
+// Logger with service logger.
+func Logger(logger log.Logger) Option {
+	return func(o *options) { o.logger = logger }
 }
 
 // Registry with service registry.
@@ -57,20 +73,7 @@ func Registry(r registry.Registry) Option {
 	return func(o *options) { o.registry = r }
 }
 
-// StartTimeout with start timeout.
-func StartTimeout(d time.Duration) Option {
-	return func(o *options) { o.startTimeout = d }
-}
-
-// StopTimeout with stop timeout.
-func StopTimeout(d time.Duration) Option {
-	return func(o *options) { o.stopTimeout = d }
-}
-
-// Signal with os signals.
-func Signal(fn func(*App, os.Signal), sigs ...os.Signal) Option {
-	return func(o *options) {
-		o.sigFn = fn
-		o.sigs = sigs
-	}
+// Server with transport servers.
+func Server(srv ...transport.Server) Option {
+	return func(o *options) { o.servers = srv }
 }

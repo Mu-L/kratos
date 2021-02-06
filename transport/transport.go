@@ -9,6 +9,12 @@ import (
 	_ "github.com/go-kratos/kratos/v2/encoding/proto"
 )
 
+// Server is transport server.
+type Server interface {
+	Start(context.Context) error
+	Stop(context.Context) error
+}
+
 // Transport is transport context value.
 type Transport struct {
 	Kind string

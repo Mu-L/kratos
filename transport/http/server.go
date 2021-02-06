@@ -7,6 +7,8 @@ import (
 	"time"
 
 	config "github.com/go-kratos/kratos/v2/api/kratos/config/http"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 
@@ -15,6 +17,8 @@ import (
 
 // SupportPackageIsVersion1 These constants should not be referenced from any other code.
 const SupportPackageIsVersion1 = true
+
+var _ transport.Server = (*Server)(nil)
 
 // DecodeRequestFunc is decode request func.
 type DecodeRequestFunc func(req *http.Request, v interface{}) error
@@ -36,6 +40,7 @@ type serverOptions struct {
 	requestDecoder  DecodeRequestFunc
 	responseEncoder EncodeResponseFunc
 	errorEncoder    EncodeErrorFunc
+	logger          log.Logger
 }
 
 // Network with server network.
@@ -80,6 +85,13 @@ func ErrorEncoder(fn EncodeErrorFunc) ServerOption {
 	}
 }
 
+// Logger with server logger.
+func Logger(logger log.Logger) ServerOption {
+	return func(s *serverOptions) {
+		s.logger = logger
+	}
+}
+
 // Apply apply server config.
 func Apply(c *config.Server) ServerOption {
 	return func(s *serverOptions) {
@@ -100,6 +112,7 @@ type Server struct {
 	*http.Server
 	router *mux.Router
 	opts   serverOptions
+	log    *log.Helper
 }
 
 // NewServer creates a HTTP server by options.
@@ -111,6 +124,7 @@ func NewServer(opts ...ServerOption) *Server {
 		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
+		logger:          stdlog.NewLogger(),
 	}
 	for _, o := range opts {
 		o(&options)
@@ -118,6 +132,7 @@ func NewServer(opts ...ServerOption) *Server {
 	srv := &Server{
 		opts:   options,
 		router: mux.NewRouter(),
+		log:    log.NewHelper("http", options.logger),
 	}
 	srv.Server = &http.Server{Handler: srv}
 	return srv
@@ -178,10 +193,12 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.log.Infof("[HTTP] server listening on: %s", s.opts.address)
 	return s.Serve(lis)
 }
 
 // Stop stop the HTTP server.
 func (s *Server) Stop(ctx context.Context) error {
+	s.log.Info("[HTTP] server stopping")
 	return s.Shutdown(ctx)
 }
