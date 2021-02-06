@@ -72,6 +72,7 @@ func (a *App) Run() error {
 	if a.opts.registry != nil {
 		g.Go(func() error {
 			time.Sleep(time.Second) // wait for server started
+			a.log.Infof("Registering %s service to the registry", a.opts.name)
 			return a.opts.registry.Register(a.Service())
 		})
 	}
@@ -96,8 +97,9 @@ func (a *App) Run() error {
 // Stop gracefully stops the application.
 func (a *App) Stop() {
 	if a.opts.registry != nil {
+		a.log.Infof("Unregistering in the registry service: %s", a.opts.name)
 		if err := a.opts.registry.Deregister(a.Service()); err != nil {
-			a.log.Errorf("Failed to deregistry registry: %v", err)
+			a.log.Errorf("Failed to deregister registry: %v", err)
 		}
 	}
 	if a.cancel != nil {
