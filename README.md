@@ -87,7 +87,7 @@ make test
 
 ## Sponsors and Backers
 
-![kratos](docs/images/alipay.png =560x400)
+![kratos](docs/images/alipay.png)
 
 ## License
 Kratos is MIT licensed. See the [LICENSE](./LICENSE) file for details.
