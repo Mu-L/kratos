@@ -68,8 +68,13 @@ func run(cmd *cobra.Command, args []string) {
 	)
 	for _, s := range res {
 		to := path.Join(targetDir, strings.ToLower(s.Service)+".go")
-		if _, err := os.Stat(to); !os.IsNotExist(err) {
+		info, err := os.Stat(to)
+		if !os.IsNotExist(err) {
 			fmt.Printf("%s already exists\n", s.Service)
+			continue
+		}
+		if err = os.MkdirAll(targetDir, info.Mode()); err != nil {
+			fmt.Printf("Failed to create file directory: %s\n", targetDir)
 			continue
 		}
 		b, err := s.execute()
