@@ -22,36 +22,6 @@ type Hook struct {
 	OnStop  func(context.Context) error
 }
 
-// Option is an application option.
-type Option func(o *options)
-
-// options is an application options.
-type options struct {
-	startTimeout time.Duration
-	stopTimeout  time.Duration
-
-	sigs  []os.Signal
-	sigFn func(*App, os.Signal)
-}
-
-// StartTimeout with start timeout.
-func StartTimeout(d time.Duration) Option {
-	return func(o *options) { o.startTimeout = d }
-}
-
-// StopTimeout with stop timeout.
-func StopTimeout(d time.Duration) Option {
-	return func(o *options) { o.stopTimeout = d }
-}
-
-// Signal with os signals.
-func Signal(fn func(*App, os.Signal), sigs ...os.Signal) Option {
-	return func(o *options) {
-		o.sigFn = fn
-		o.sigs = sigs
-	}
-}
-
 // App is an application components lifecycle manager
 type App struct {
 	opts  options
@@ -81,7 +51,9 @@ func New(opts ...Option) *App {
 	for _, o := range opts {
 		o(&options)
 	}
-	return &App{opts: options}
+	return &App{
+		opts: options,
+	}
 }
 
 // Append register interface that are executed on application start and stop.
