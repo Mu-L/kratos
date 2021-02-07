@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/go-kratos/kratos/v2/api"
+	pb "github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/proto"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -42,7 +42,7 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 }
 
 func genErrorsReason(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, enum *protogen.Enum) {
-	err := proto.GetExtension(enum.Desc.Options(), api.E_Errors)
+	err := proto.GetExtension(enum.Desc.Options(), pb.E_Errors)
 	if ok := err.(bool); !ok {
 		return
 	}

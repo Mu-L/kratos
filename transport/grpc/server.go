@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	config "github.com/go-kratos/kratos/v2/api/kratos/config/grpc"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -75,21 +74,6 @@ func Logger(logger log.Logger) ServerOption {
 func Options(opts ...grpc.ServerOption) ServerOption {
 	return func(o *serverOptions) {
 		o.grpcOpts = opts
-	}
-}
-
-// Apply apply server config.
-func Apply(c *config.Server) ServerOption {
-	return func(o *serverOptions) {
-		if c.Network != "" {
-			o.network = c.Network
-		}
-		if c.Address != "" {
-			o.address = c.Address
-		}
-		if c.Timeout != nil {
-			o.timeout = c.Timeout.AsDuration()
-		}
 	}
 }
 

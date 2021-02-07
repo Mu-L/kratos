@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	config "github.com/go-kratos/kratos/v2/api/kratos/config/http"
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
 )
@@ -40,24 +39,6 @@ func WithMaxIdleConns(n int) ClientOption {
 func WithUserAgent(ua string) ClientOption {
 	return func(o *Client) {
 		o.userAgent = ua
-	}
-}
-
-// WithApply apply client config.
-func WithApply(c *config.Client) ClientOption {
-	return func(o *Client) {
-		if c.Timeout != nil {
-			o.timeout = c.Timeout.AsDuration()
-		}
-		if c.Keepalive != nil {
-			o.keepAlive = c.Keepalive.AsDuration()
-		}
-		if c.MaxIdleConns > 0 {
-			o.maxIdleConns = int(c.MaxIdleConns)
-		}
-		if c.UserAgent != "" {
-			o.userAgent = c.UserAgent
-		}
 	}
 }
 

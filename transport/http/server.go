@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	config "github.com/go-kratos/kratos/v2/api/kratos/config/http"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -89,21 +88,6 @@ func ErrorEncoder(fn EncodeErrorFunc) ServerOption {
 func Logger(logger log.Logger) ServerOption {
 	return func(s *serverOptions) {
 		s.logger = logger
-	}
-}
-
-// Apply apply server config.
-func Apply(c *config.Server) ServerOption {
-	return func(s *serverOptions) {
-		if c.Network != "" {
-			s.network = c.Network
-		}
-		if c.Address != "" {
-			s.address = c.Address
-		}
-		if c.Timeout != nil {
-			s.timeout = c.Timeout.AsDuration()
-		}
 	}
 }
 
