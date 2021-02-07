@@ -24,9 +24,13 @@ func run(cmd *cobra.Command, args []string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "\033[31mERROR: project name is required.\033[m Example: kratos new helloworld\n")
+		return
+	}
 	p := &Project{Name: args[0]}
 	if err := p.Generate(ctx, wd); err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "\033[31mERROR: %s\033[m\n", err)
 		return
 	}
 }
