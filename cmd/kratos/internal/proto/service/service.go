@@ -27,7 +27,7 @@ func init() {
 
 func run(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
-		fmt.Println("Please specify the proto file. Example: kratos proto service api/xxx.proto")
+		fmt.Fprintln(os.Stderr, "Please specify the proto file. Example: kratos proto service api/xxx.proto")
 		return
 	}
 	reader, err := os.Open(args[0])
@@ -68,13 +68,13 @@ func run(cmd *cobra.Command, args []string) {
 	)
 	for _, s := range res {
 		to := path.Join(targetDir, strings.ToLower(s.Service)+".go")
-		info, err := os.Stat(to)
+		_, err := os.Stat(to)
 		if !os.IsNotExist(err) {
-			fmt.Printf("%s already exists\n", s.Service)
+			fmt.Fprintf(os.Stderr, "%s already exists\n", s.Service)
 			continue
 		}
-		if err = os.MkdirAll(targetDir, info.Mode()); err != nil {
-			fmt.Printf("Failed to create file directory: %s\n", targetDir)
+		if err = os.MkdirAll(targetDir, os.ModeDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create file directory: %s\n", targetDir)
 			continue
 		}
 		b, err := s.execute()
