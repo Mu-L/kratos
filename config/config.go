@@ -1,12 +1,15 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"sync"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/config/source"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/log/stdlog"
 )
 
 var (
@@ -24,68 +27,83 @@ type Observer func(string, Value)
 // Config is a config interface.
 type Config interface {
 	Load() error
+	Scan(v interface{}) error
 	Value(key string) Value
 	Watch(key string, o Observer) error
 	Close() error
 }
 
 type config struct {
+	opts      options
+	reader    Reader
 	cached    sync.Map
 	observers sync.Map
 	watchers  []source.Watcher
-	resolvers []*resolver
-	opts      options
+	log       *log.Helper
 }
 
 // New new a config with options.
 func New(opts ...Option) Config {
-	options := defaultOptions()
+	options := options{
+		logger: stdlog.NewLogger(),
+		decoder: func(kv *source.KeyValue, v interface{}) error {
+			return json.Unmarshal(kv.Value, v)
+		},
+	}
 	for _, o := range opts {
 		o(&options)
 	}
-	return &config{opts: options}
+	return &config{
+		opts: options,
+		log:  log.NewHelper("config", options.logger),
+	}
 }
 
-func (c *config) watch(r *resolver, w source.Watcher) {
+func (c *config) watch(w source.Watcher) {
 	for {
 		kvs, err := w.Next()
 		if err != nil {
 			time.Sleep(time.Second)
+			c.log.Errorf("Failed to watch next config: %v", err)
 			continue
 		}
-		for _, kv := range kvs {
-			r.reload(kv)
-			c.cached.Range(func(key, value interface{}) bool {
-				k := key.(string)
-				v := value.(Value)
-				for _, r := range c.resolvers {
-					if n := r.Resolve(k); n != nil && !reflect.DeepEqual(n.Load(), v.Load()) {
-						v.Store(n.Load())
-						if o, ok := c.observers.Load(k); ok {
-							o.(Observer)(k, v)
-						}
-					}
-				}
-				return true
-			})
+		if err := c.reader.Merge(kvs...); err != nil {
+			c.log.Errorf("Failed to merge next config: %v", err)
+			continue
 		}
+		c.cached.Range(func(key, value interface{}) bool {
+			k := key.(string)
+			v := value.(Value)
+			if n, ok := c.reader.Value(k); ok && !reflect.DeepEqual(n.Load(), v.Load()) {
+				v.Store(n.Load())
+				if o, ok := c.observers.Load(k); ok {
+					o.(Observer)(k, v)
+				}
+			}
+			return true
+		})
 	}
 }
 
 func (c *config) Load() error {
-	for _, source := range c.opts.sources {
-		w, err := source.Watch()
+	rd := newReader(c.opts)
+	for _, src := range c.opts.sources {
+		kvs, err := src.Load()
 		if err != nil {
 			return err
 		}
-		r, err := newResolver(source, c.opts)
-		if err != nil {
+		if err := rd.Merge(kvs...); err != nil {
+			c.log.Errorf("Failed to merge config source: %v", err)
 			return err
 		}
-		c.watchers = append(c.watchers, w)
-		c.resolvers = append(c.resolvers, r)
-		go c.watch(r, w)
+		w, err := src.Watch()
+		if err != nil {
+			c.log.Errorf("Failed to watch config source: %v", err)
+			return err
+		}
+		go c.watch(w)
 	}
+	c.reader = rd
 	return nil
 }
 
@@ -93,13 +111,19 @@ func (c *config) Value(key string) Value {
 	if v, ok := c.cached.Load(key); ok {
 		return v.(Value)
 	}
-	for _, r := range c.resolvers {
-		if v := r.Resolve(key); v != nil {
-			c.cached.Store(key, v)
-			return v
-		}
+	if v, ok := c.reader.Value(key); ok {
+		c.cached.Store(key, v)
+		return v
 	}
 	return &errValue{err: ErrNotFound}
+}
+
+func (c *config) Scan(v interface{}) error {
+	data, err := c.reader.Source()
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, v)
 }
 
 func (c *config) Watch(key string, o Observer) error {

@@ -3,11 +3,10 @@ package source
 import "time"
 
 // KeyValue is config key value.
-// format: json/yaml/text
 type KeyValue struct {
 	Key       string
 	Value     []byte
-	Format    string
+	Metadata  map[string]string
 	Timestamp time.Time
 }
 

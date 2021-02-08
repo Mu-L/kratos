@@ -37,7 +37,6 @@ func (f *file) loadFile(path string) (*source.KeyValue, error) {
 	return &source.KeyValue{
 		Key:       info.Name(),
 		Value:     data,
-		Format:    format(info.Name()),
 		Timestamp: info.ModTime(),
 	}, nil
 }

@@ -1,43 +1,39 @@
 package config
 
 import (
-	"github.com/go-kratos/kratos/v2/config/parser"
-	"github.com/go-kratos/kratos/v2/config/parser/json"
-	"github.com/go-kratos/kratos/v2/config/parser/text"
-	"github.com/go-kratos/kratos/v2/config/parser/toml"
-	"github.com/go-kratos/kratos/v2/config/parser/yaml"
 	"github.com/go-kratos/kratos/v2/config/source"
+	"github.com/go-kratos/kratos/v2/log"
 )
+
+// Decoder is config decoder.
+type Decoder func(*source.KeyValue, interface{}) error
 
 // Option is config option.
 type Option func(*options)
 
 type options struct {
-	parsers []parser.Parser
 	sources []source.Source
+	decoder Decoder
+	logger  log.Logger
 }
 
-func defaultOptions() options {
-	return options{
-		parsers: []parser.Parser{
-			text.NewParser(),
-			json.NewParser(),
-			yaml.NewParser(),
-			toml.NewParser(),
-		},
-	}
-}
-
-// WithSource .
+// WithSource with config source.
 func WithSource(s ...source.Source) Option {
 	return func(o *options) {
 		o.sources = s
 	}
 }
 
-// WithParser .
-func WithParser(p ...parser.Parser) Option {
+// WithDecoder with config decoder.
+func WithDecoder(d Decoder) Option {
 	return func(o *options) {
-		o.parsers = p
+		o.decoder = d
+	}
+}
+
+// WithLogger with config loogger.
+func WithLogger(l log.Logger) Option {
+	return func(o *options) {
+		o.logger = l
 	}
 }
