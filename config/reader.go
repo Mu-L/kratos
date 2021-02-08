@@ -62,9 +62,9 @@ func (r *reader) Value(path string) (Value, bool) {
 			av.Store(value)
 			return av, true
 		}
-		switch value.(type) {
+		switch vm := value.(type) {
 		case map[string]interface{}:
-			next = value.(map[string]interface{})
+			next = vm
 		default:
 			return nil, false
 		}
