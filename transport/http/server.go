@@ -104,7 +104,7 @@ func NewServer(opts ...ServerOption) *Server {
 	options := serverOptions{
 		network:         "tcp",
 		address:         ":8000",
-		timeout:         500 * time.Millisecond,
+		timeout:         time.Second,
 		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,

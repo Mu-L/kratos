@@ -89,7 +89,7 @@ func NewServer(opts ...ServerOption) *Server {
 	options := serverOptions{
 		network: "tcp",
 		address: ":9000",
-		timeout: 500 * time.Millisecond,
+		timeout: time.Second,
 		logger:  stdlog.NewLogger(),
 	}
 	for _, o := range opts {
