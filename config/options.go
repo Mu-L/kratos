@@ -1,24 +1,23 @@
 package config
 
 import (
-	"github.com/go-kratos/kratos/v2/config/source"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
 // Decoder is config decoder.
-type Decoder func(*source.KeyValue, interface{}) error
+type Decoder func(*KeyValue, interface{}) error
 
 // Option is config option.
 type Option func(*options)
 
 type options struct {
-	sources []source.Source
+	sources []Source
 	decoder Decoder
 	logger  log.Logger
 }
 
 // WithSource with config source.
-func WithSource(s ...source.Source) Option {
+func WithSource(s ...Source) Option {
 	return func(o *options) {
 		o.sources = s
 	}

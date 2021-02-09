@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-kratos/kratos/v2/config/source"
+	"github.com/go-kratos/kratos/v2/config"
 )
 
 type watcher struct {
@@ -13,7 +13,7 @@ type watcher struct {
 	fw *fsnotify.Watcher
 }
 
-func newWatcher(f *file) (source.Watcher, error) {
+func newWatcher(f *file) (config.Watcher, error) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func newWatcher(f *file) (source.Watcher, error) {
 	return &watcher{f: f, fw: fw}, nil
 }
 
-func (w *watcher) Next() ([]*source.KeyValue, error) {
+func (w *watcher) Next() ([]*config.KeyValue, error) {
 	select {
 	case event := <-w.fw.Events:
 		if event.Op == fsnotify.Rename {
@@ -42,7 +42,7 @@ func (w *watcher) Next() ([]*source.KeyValue, error) {
 		if err != nil {
 			return nil, err
 		}
-		return []*source.KeyValue{kv}, nil
+		return []*config.KeyValue{kv}, nil
 	case err := <-w.fw.Errors:
 		return nil, err
 	}

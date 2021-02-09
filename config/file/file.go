@@ -6,21 +6,21 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-kratos/kratos/v2/config/source"
+	"github.com/go-kratos/kratos/v2/config"
 )
 
-var _ source.Source = (*file)(nil)
+var _ config.Source = (*file)(nil)
 
 type file struct {
 	path string
 }
 
 // NewSource new a file source.
-func NewSource(path string) source.Source {
+func NewSource(path string) config.Source {
 	return &file{path: path}
 }
 
-func (f *file) loadFile(path string) (*source.KeyValue, error) {
+func (f *file) loadFile(path string) (*config.KeyValue, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -34,14 +34,14 @@ func (f *file) loadFile(path string) (*source.KeyValue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &source.KeyValue{
+	return &config.KeyValue{
 		Key:       info.Name(),
 		Value:     data,
 		Timestamp: info.ModTime(),
 	}, nil
 }
 
-func (f *file) loadDir(path string) (kvs []*source.KeyValue, err error) {
+func (f *file) loadDir(path string) (kvs []*config.KeyValue, err error) {
 	files, err := ioutil.ReadDir(f.path)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (f *file) loadDir(path string) (kvs []*source.KeyValue, err error) {
 	return
 }
 
-func (f *file) Load() (kvs []*source.KeyValue, err error) {
+func (f *file) Load() (kvs []*config.KeyValue, err error) {
 	fi, err := os.Stat(f.path)
 	if err != nil {
 		return nil, err
@@ -72,9 +72,9 @@ func (f *file) Load() (kvs []*source.KeyValue, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return []*source.KeyValue{kv}, nil
+	return []*config.KeyValue{kv}, nil
 }
 
-func (f *file) Watch() (source.Watcher, error) {
+func (f *file) Watch() (config.Watcher, error) {
 	return newWatcher(f)
 }

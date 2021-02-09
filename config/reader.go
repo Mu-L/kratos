@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-kratos/kratos/v2/config/source"
 	"github.com/imdario/mergo"
 )
 
 // Reader is config reader.
 type Reader interface {
-	Merge(...*source.KeyValue) error
+	Merge(...*KeyValue) error
 	Value(string) (Value, bool)
 	Source() ([]byte, error)
 }
@@ -28,7 +27,7 @@ func newReader(opts options) Reader {
 	}
 }
 
-func (r *reader) Merge(kvs ...*source.KeyValue) error {
+func (r *reader) Merge(kvs ...*KeyValue) error {
 	merged, err := cloneMap(r.values)
 	if err != nil {
 		return err
@@ -91,13 +90,13 @@ func cloneMap(src map[string]interface{}) (map[string]interface{}, error) {
 func convertMap(src interface{}) interface{} {
 	switch m := src.(type) {
 	case map[string]interface{}:
-		dst := make(map[string]interface{})
+		dst := make(map[string]interface{}, len(m))
 		for k, v := range m {
 			dst[k] = convertMap(v)
 		}
 		return dst
 	case map[interface{}]interface{}:
-		dst := make(map[string]interface{})
+		dst := make(map[string]interface{}, len(m))
 		for k, v := range m {
 			dst[fmt.Sprint(k)] = convertMap(v)
 		}

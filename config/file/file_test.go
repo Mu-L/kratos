@@ -1,22 +1,24 @@
-package config
+package file
 
 import (
-	"strings"
+	"errors"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/config/source"
-	"github.com/go-kratos/kratos/v2/config/source/memory"
+	"github.com/go-kratos/kratos/v2/config"
 )
 
 const (
-	_json = `
+	_testJSON = `
 {
   "test": {
     "settings" : {
       "int_key": 1000,
-      "float_key": 1000.1, 
-      "duration_key": 10000, 
+      "float_key": 1000.1,
+      "duration_key": 10000,
       "string_key": "string_value"
     },
     "server": {
@@ -27,17 +29,49 @@ const (
 }`
 )
 
-func TestConfigJSON(t *testing.T) {
-	c := New(WithSource(
-		memory.New(nil, &source.KeyValue{
-			Key:   "test",
-			Value: []byte(strings.TrimSpace(_json)),
-		})),
+func TestFile(t *testing.T) {
+	var (
+		path = filepath.Join(os.TempDir(), "test_config")
+		file = filepath.Join(path, "test.json")
+		data = []byte(_testJSON)
 	)
+	defer os.Remove(path)
+	if err := os.MkdirAll(path, 0700); err != nil {
+		t.Error(err)
+	}
+	if err := ioutil.WriteFile(file, data, 0666); err != nil {
+		t.Error(err)
+	}
+	testSource(t, file, data)
+	testSource(t, path, data)
+}
+
+func testSource(t *testing.T, path string, data []byte) {
+	t.Log(path)
+
+	s := NewSource(path)
+	kvs, err := s.Load()
+	if err != nil {
+		t.Error(err)
+	}
+	if string(kvs[0].Value) != string(data) {
+		t.Errorf("no expected: %s, but got: %s", kvs[0].Value, data)
+	}
+}
+
+func TestConfig(t *testing.T) {
+	path := filepath.Join(os.TempDir(), "test_config.json")
+	defer os.Remove(path)
+	if err := ioutil.WriteFile(path, []byte(_testJSON), 0666); err != nil {
+		t.Error(err)
+	}
+	c := config.New(config.WithSource(
+		NewSource(path),
+	))
 	testConfig(t, c)
 }
 
-func testConfig(t *testing.T, c Config) {
+func testConfig(t *testing.T, c config.Config) {
 	var expected = map[string]interface{}{
 		"test.settings.int_key":      int64(1000),
 		"test.settings.float_key":    float64(1000.1),
@@ -101,7 +135,7 @@ func testConfig(t *testing.T, c Config) {
 	}
 
 	// not found
-	if _, err := c.Value("not_found_key").Bool(); err != ErrNotFound {
+	if _, err := c.Value("not_found_key").Bool(); errors.Is(err, config.ErrNotFound) {
 		t.Logf("not_found_key not match: %v", err)
 	}
 

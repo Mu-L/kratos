@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/imdario/mergo v0.3.6
-	github.com/kr/pretty v0.2.0 // indirect
+	github.com/kr/pretty v0.2.1 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
