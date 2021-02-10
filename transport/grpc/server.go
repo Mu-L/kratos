@@ -119,7 +119,7 @@ func NewServer(opts ...ServerOption) *Server {
 }
 
 // Start start the gRPC server.
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Start() error {
 	lis, err := net.Listen(s.opts.network, s.opts.address)
 	if err != nil {
 		return err
@@ -129,7 +129,7 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 // Stop stop the gRPC server.
-func (s *Server) Stop(ctx context.Context) error {
+func (s *Server) Stop() error {
 	s.GracefulStop()
 	s.log.Info("[gRPC] server stopping")
 	return nil

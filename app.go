@@ -6,11 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
-	"github.com/go-kratos/kratos/v2/registry"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,6 +16,7 @@ import (
 type App struct {
 	opts   options
 	log    *log.Helper
+	ctx    context.Context
 	cancel func()
 }
 
@@ -31,50 +30,43 @@ func New(opts ...Option) *App {
 	for _, o := range opts {
 		o(&options)
 	}
+	ctx, cancel := context.WithCancel(options.ctx)
 	return &App{
-		opts: options,
-		log:  log.NewHelper("app", options.logger),
+		ctx:    ctx,
+		cancel: cancel,
+		opts:   options,
+		log:    log.NewHelper("app", options.logger),
 	}
 }
 
-// Service returns registry service.
-func (a *App) Service() *registry.Service {
-	return &registry.Service{
-		ID:        a.opts.id,
-		Name:      a.opts.name,
-		Version:   a.opts.version,
-		Metadata:  a.opts.metadata,
-		Endpoints: a.opts.endpoints,
+// Stop gracefully stops the application.
+func (a *App) Stop() error {
+	if a.opts.registry != nil {
+		a.opts.registry.Deregister(a.opts.Service())
 	}
+	if a.cancel != nil {
+		a.cancel()
+	}
+	return nil
 }
 
 // Run executes all OnStart hooks registered with the application's Lifecycle.
 func (a *App) Run() error {
-	var (
-		ctx context.Context
-	)
-	ctx, a.cancel = context.WithCancel(a.opts.ctx)
-	g, ctx := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(a.ctx)
 	for _, srv := range a.opts.servers {
 		srv := srv
 		g.Go(func() error {
 			<-ctx.Done() // wait for stop signal
-			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			return srv.Stop(stopCtx)
+			return srv.Stop()
 		})
 		g.Go(func() error {
-			startCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			return srv.Start(startCtx)
+			return srv.Start()
 		})
 	}
 	if a.opts.registry != nil {
-		g.Go(func() error {
-			time.Sleep(time.Second) // wait for server started
-			a.log.Infof("Registering %s service to the registry", a.opts.name)
-			return a.opts.registry.Register(a.Service())
-		})
+		if err := a.opts.registry.Register(a.opts.Service()); err != nil {
+			return err
+		}
 	}
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, a.opts.sigs...)
@@ -92,17 +84,4 @@ func (a *App) Run() error {
 		return err
 	}
 	return nil
-}
-
-// Stop gracefully stops the application.
-func (a *App) Stop() {
-	if a.opts.registry != nil {
-		a.log.Infof("Unregistering in the registry service: %s", a.opts.name)
-		if err := a.opts.registry.Deregister(a.Service()); err != nil {
-			a.log.Errorf("Failed to deregister registry: %v", err)
-		}
-	}
-	if a.cancel != nil {
-		a.cancel()
-	}
 }

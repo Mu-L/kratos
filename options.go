@@ -28,6 +28,16 @@ type options struct {
 	servers  []transport.Server
 }
 
+func (o options) Service() *registry.Service {
+	return &registry.Service{
+		ID:        o.id,
+		Name:      o.name,
+		Version:   o.version,
+		Metadata:  o.metadata,
+		Endpoints: o.endpoints,
+	}
+}
+
 // ID with service id.
 func ID(id string) Option {
 	return func(o *options) { o.id = id }

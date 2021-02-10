@@ -135,7 +135,7 @@ func (s *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 }
 
 // Start start the HTTP server.
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Start() error {
 	lis, err := net.Listen(s.opts.network, s.opts.address)
 	if err != nil {
 		return err
@@ -145,7 +145,7 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 // Stop stop the HTTP server.
-func (s *Server) Stop(ctx context.Context) error {
+func (s *Server) Stop() error {
 	s.log.Info("[HTTP] server stopping")
-	return s.Shutdown(ctx)
+	return s.Shutdown(context.Background())
 }

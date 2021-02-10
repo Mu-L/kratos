@@ -11,8 +11,8 @@ import (
 
 // Server is transport server.
 type Server interface {
-	Start(context.Context) error
-	Stop(context.Context) error
+	Start() error
+	Stop() error
 }
 
 // Transport is transport context value.

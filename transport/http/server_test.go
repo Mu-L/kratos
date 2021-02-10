@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,10 +25,10 @@ func TestServer(t *testing.T) {
 	}
 
 	time.AfterFunc(time.Second, func() {
-		srv.Stop(context.Background())
+		srv.Stop()
 	})
 
-	if err := srv.Start(context.Background()); !errors.Is(err, http.ErrServerClosed) {
+	if err := srv.Start(); !errors.Is(err, http.ErrServerClosed) {
 		t.Fatal(err)
 	}
 }
