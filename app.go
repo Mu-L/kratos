@@ -39,17 +39,6 @@ func New(opts ...Option) *App {
 	}
 }
 
-// Stop gracefully stops the application.
-func (a *App) Stop() error {
-	if a.opts.registry != nil {
-		a.opts.registry.Deregister(a.opts.Service())
-	}
-	if a.cancel != nil {
-		a.cancel()
-	}
-	return nil
-}
-
 // Run executes all OnStart hooks registered with the application's Lifecycle.
 func (a *App) Run() error {
 	g, ctx := errgroup.WithContext(a.ctx)
@@ -82,6 +71,19 @@ func (a *App) Run() error {
 	})
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		return err
+	}
+	return nil
+}
+
+// Stop gracefully stops the application.
+func (a *App) Stop() error {
+	if a.opts.registry != nil {
+		if err := a.opts.registry.Deregister(a.opts.Service()); err != nil {
+			return err
+		}
+	}
+	if a.cancel != nil {
+		a.cancel()
 	}
 	return nil
 }
