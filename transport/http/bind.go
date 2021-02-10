@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -37,6 +38,23 @@ func BindForm(req *http.Request, msg proto.Message) error {
 		if err := populateFieldValues(msg.ProtoReflect(), strings.Split(key, "."), values); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// BindBody default request decoder.
+func BindBody(req *http.Request, msg proto.Message) error {
+	codec, err := requestCodec(req)
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
+	defer req.Body.Close()
+	if err = codec.Unmarshal(data, msg); err != nil {
+		return err
 	}
 	return nil
 }

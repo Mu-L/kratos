@@ -4,16 +4,17 @@ package testproto
 
 import (
 	context "context"
+	middleware "github.com/go-kratos/kratos/v2/middleware"
 	http1 "github.com/go-kratos/kratos/v2/transport/http"
 	http "net/http"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the kratos package it is being compiled against.
-// context./http.
+// context./http./middleware.
 const _ = http1.SupportPackageIsVersion1
 
-type EchoServiceService interface {
+type EchoServiceHTTPServer interface {
 	Echo(context.Context, *SimpleMessage) (*SimpleMessage, error)
 
 	EchoBody(context.Context, *SimpleMessage) (*SimpleMessage, error)
@@ -23,184 +24,217 @@ type EchoServiceService interface {
 	EchoPatch(context.Context, *DynamicMessageUpdate) (*DynamicMessageUpdate, error)
 }
 
-func RegisterEchoServiceHTTPServer(s *http1.Server, srv EchoServiceService) {
-	r := s.Route("/")
+func RegisterEchoServiceHTTPServer(s http1.ServiceRegistrar, srv EchoServiceHTTPServer) {
+	s.RegisterService(&_HTTP_EchoService_serviceDesc, srv)
+}
 
-	r.GET("/v1/example/echo/{id}/{num}", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_Echo_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := http1.BindVars(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindVars(req, &in); err != nil {
+		return nil, err
+	}
 
-		if err := http1.BindForm(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindForm(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).Echo(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).Echo(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.GET("/v1/example/echo/{id}/{num}/{lang}", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_Echo_1(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := http1.BindVars(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindVars(req, &in); err != nil {
+		return nil, err
+	}
 
-		if err := http1.BindForm(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindForm(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).Echo(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).Echo(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.GET("/v1/example/echo1/{id}/{line_num}/{status.note}", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_Echo_2(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := http1.BindVars(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindVars(req, &in); err != nil {
+		return nil, err
+	}
 
-		if err := http1.BindForm(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindForm(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).Echo(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).Echo(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.GET("/v1/example/echo2/{no.note}", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_Echo_3(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := http1.BindVars(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindVars(req, &in); err != nil {
+		return nil, err
+	}
 
-		if err := http1.BindForm(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindForm(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).Echo(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).Echo(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.POST("/v1/example/echo/{id}", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_Echo_4(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := http1.BindVars(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindVars(req, &in); err != nil {
+		return nil, err
+	}
 
-		if err := http1.BindForm(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindForm(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).Echo(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).Echo(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.POST("/v1/example/echo_body", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_EchoBody_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := s.Decode(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindBody(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).EchoBody(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).EchoBody(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.DELETE("/v1/example/echo_delete", func(res http.ResponseWriter, req *http.Request) {
-		in := new(SimpleMessage)
+func _HTTP_EchoService_EchoDelete_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in SimpleMessage
 
-		if err := http1.BindForm(req, in); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindForm(req, &in); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).EchoDelete(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).EchoDelete(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
-	r.PATCH("/v1/example/echo_patch", func(res http.ResponseWriter, req *http.Request) {
-		in := new(DynamicMessageUpdate)
+func _HTTP_EchoService_EchoPatch_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+	var in DynamicMessageUpdate
 
-		if err := s.Decode(req, in.Body); err != nil {
-			s.Error(res, req, err)
-			return
-		}
+	if err := http1.BindBody(req, in.Body); err != nil {
+		return nil, err
+	}
 
-		h := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.(EchoServiceService).EchoPatch(ctx, in)
-		}
-		out, err := s.Invoke(req.Context(), in, h)
-		if err != nil {
-			s.Error(res, req, err)
-			return
-		}
-		s.Encode(res, req, out)
-	})
+	h := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServiceServer).EchoPatch(ctx, &in)
+	}
+	out, err := m(h)(ctx, &in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
+var _HTTP_EchoService_serviceDesc = http1.ServiceDesc{
+	ServiceName: "testproto.EchoService",
+	Methods: []http1.MethodDesc{
+
+		{
+			Path:    "/v1/example/echo/{id}/{num}",
+			Method:  "GET",
+			Handler: _HTTP_EchoService_Echo_0,
+		},
+
+		{
+			Path:    "/v1/example/echo/{id}/{num}/{lang}",
+			Method:  "GET",
+			Handler: _HTTP_EchoService_Echo_1,
+		},
+
+		{
+			Path:    "/v1/example/echo1/{id}/{line_num}/{status.note}",
+			Method:  "GET",
+			Handler: _HTTP_EchoService_Echo_2,
+		},
+
+		{
+			Path:    "/v1/example/echo2/{no.note}",
+			Method:  "GET",
+			Handler: _HTTP_EchoService_Echo_3,
+		},
+
+		{
+			Path:    "/v1/example/echo/{id}",
+			Method:  "POST",
+			Handler: _HTTP_EchoService_Echo_4,
+		},
+
+		{
+			Path:    "/v1/example/echo_body",
+			Method:  "POST",
+			Handler: _HTTP_EchoService_EchoBody_0,
+		},
+
+		{
+			Path:    "/v1/example/echo_delete",
+			Method:  "DELETE",
+			Handler: _HTTP_EchoService_EchoDelete_0,
+		},
+
+		{
+			Path:    "/v1/example/echo_patch",
+			Method:  "PATCH",
+			Handler: _HTTP_EchoService_EchoPatch_0,
+		},
+	},
+	Metadata: "echo_service.proto",
 }

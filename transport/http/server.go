@@ -94,8 +94,8 @@ func Logger(logger log.Logger) ServerOption {
 // Server is a HTTP server wrapper.
 type Server struct {
 	*http.Server
-	router *mux.Router
 	opts   serverOptions
+	router *mux.Router
 	log    *log.Helper
 }
 
@@ -105,7 +105,6 @@ func NewServer(opts ...ServerOption) *Server {
 		network:         "tcp",
 		address:         ":8000",
 		timeout:         time.Second,
-		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
 		logger:          stdlog.NewLogger(),
@@ -122,8 +121,8 @@ func NewServer(opts ...ServerOption) *Server {
 	return srv
 }
 
-// Route .
-func (s *Server) Route(path string) *RouteGroup {
+// RouteGroup .
+func (s *Server) RouteGroup(path string) *RouteGroup {
 	return &RouteGroup{root: path, router: s.router}
 }
 
@@ -135,31 +134,6 @@ func (s *Server) Handle(path string, h http.Handler) {
 // HandleFunc registers a new route with a matcher for the URL path.
 func (s *Server) HandleFunc(path string, h http.HandlerFunc) {
 	s.router.HandleFunc(path, h)
-}
-
-// Error .
-func (s *Server) Error(res http.ResponseWriter, req *http.Request, err error) {
-	s.opts.errorEncoder(res, req, err)
-}
-
-// Decode .
-func (s *Server) Decode(req *http.Request, v interface{}) error {
-	return s.opts.requestDecoder(req, v)
-}
-
-// Encode .
-func (s *Server) Encode(res http.ResponseWriter, req *http.Request, v interface{}) {
-	if err := s.opts.responseEncoder(res, req, v); err != nil {
-		s.Error(res, req, err)
-	}
-}
-
-// Invoke .
-func (s *Server) Invoke(ctx context.Context, req interface{}, h middleware.Handler) (interface{}, error) {
-	if s.opts.middleware != nil {
-		h = s.opts.middleware(h)
-	}
-	return h(ctx, req)
 }
 
 // ServeHTTP should write reply headers and data to the ResponseWriter and then return.

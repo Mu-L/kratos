@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	contextPackage   = protogen.GoImportPath("context")
-	httpPackage      = protogen.GoImportPath("net/http")
-	transportPackage = protogen.GoImportPath("github.com/go-kratos/kratos/v2/transport/http")
+	contextPackage    = protogen.GoImportPath("context")
+	httpPackage       = protogen.GoImportPath("net/http")
+	transportPackage  = protogen.GoImportPath("github.com/go-kratos/kratos/v2/transport/http")
+	middlewarePackage = protogen.GoImportPath("github.com/go-kratos/kratos/v2/middleware")
 )
 
 var methodSets = make(map[string]int)
@@ -40,7 +41,7 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	}
 	g.P("// This is a compile-time assertion to ensure that this generated file")
 	g.P("// is compatible with the kratos package it is being compiled against.")
-	g.P("// ", contextPackage.Ident(""), "/", httpPackage.Ident(""))
+	g.P("// ", contextPackage.Ident(""), "/", httpPackage.Ident(""), "/", middlewarePackage.Ident(""))
 	g.P("const _ = ", transportPackage.Ident("SupportPackageIsVersion1"))
 	g.P()
 

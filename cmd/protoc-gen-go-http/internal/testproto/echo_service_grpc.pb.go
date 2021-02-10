@@ -40,7 +40,7 @@ func NewEchoServiceClient(cc grpc.ClientConnInterface) EchoServiceClient {
 
 func (c *echoServiceClient) Echo(ctx context.Context, in *SimpleMessage, opts ...grpc.CallOption) (*SimpleMessage, error) {
 	out := new(SimpleMessage)
-	err := c.cc.Invoke(ctx, "/grpc.gateway.examples.internal.proto.examplepb.EchoService/Echo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/testproto.EchoService/Echo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *echoServiceClient) Echo(ctx context.Context, in *SimpleMessage, opts ..
 
 func (c *echoServiceClient) EchoBody(ctx context.Context, in *SimpleMessage, opts ...grpc.CallOption) (*SimpleMessage, error) {
 	out := new(SimpleMessage)
-	err := c.cc.Invoke(ctx, "/grpc.gateway.examples.internal.proto.examplepb.EchoService/EchoBody", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/testproto.EchoService/EchoBody", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (c *echoServiceClient) EchoBody(ctx context.Context, in *SimpleMessage, opt
 
 func (c *echoServiceClient) EchoDelete(ctx context.Context, in *SimpleMessage, opts ...grpc.CallOption) (*SimpleMessage, error) {
 	out := new(SimpleMessage)
-	err := c.cc.Invoke(ctx, "/grpc.gateway.examples.internal.proto.examplepb.EchoService/EchoDelete", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/testproto.EchoService/EchoDelete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (c *echoServiceClient) EchoDelete(ctx context.Context, in *SimpleMessage, o
 
 func (c *echoServiceClient) EchoPatch(ctx context.Context, in *DynamicMessageUpdate, opts ...grpc.CallOption) (*DynamicMessageUpdate, error) {
 	out := new(DynamicMessageUpdate)
-	err := c.cc.Invoke(ctx, "/grpc.gateway.examples.internal.proto.examplepb.EchoService/EchoPatch", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/testproto.EchoService/EchoPatch", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func _EchoService_Echo_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc.gateway.examples.internal.proto.examplepb.EchoService/Echo",
+		FullMethod: "/testproto.EchoService/Echo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EchoServiceServer).Echo(ctx, req.(*SimpleMessage))
@@ -149,7 +149,7 @@ func _EchoService_EchoBody_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc.gateway.examples.internal.proto.examplepb.EchoService/EchoBody",
+		FullMethod: "/testproto.EchoService/EchoBody",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EchoServiceServer).EchoBody(ctx, req.(*SimpleMessage))
@@ -167,7 +167,7 @@ func _EchoService_EchoDelete_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc.gateway.examples.internal.proto.examplepb.EchoService/EchoDelete",
+		FullMethod: "/testproto.EchoService/EchoDelete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EchoServiceServer).EchoDelete(ctx, req.(*SimpleMessage))
@@ -185,7 +185,7 @@ func _EchoService_EchoPatch_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc.gateway.examples.internal.proto.examplepb.EchoService/EchoPatch",
+		FullMethod: "/testproto.EchoService/EchoPatch",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EchoServiceServer).EchoPatch(ctx, req.(*DynamicMessageUpdate))
@@ -194,7 +194,7 @@ func _EchoService_EchoPatch_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 var _EchoService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc.gateway.examples.internal.proto.examplepb.EchoService",
+	ServiceName: "testproto.EchoService",
 	HandlerType: (*EchoServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

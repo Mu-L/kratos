@@ -1,26 +1,8 @@
 package http
 
 import (
-	"io/ioutil"
 	"net/http"
 )
-
-// DefaultRequestDecoder default request decoder.
-func DefaultRequestDecoder(req *http.Request, v interface{}) error {
-	codec, err := requestCodec(req)
-	if err != nil {
-		return err
-	}
-	data, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return err
-	}
-	defer req.Body.Close()
-	if err = codec.Unmarshal(data, v); err != nil {
-		return err
-	}
-	return nil
-}
 
 // DefaultResponseEncoder is default response encoder.
 func DefaultResponseEncoder(res http.ResponseWriter, req *http.Request, v interface{}) error {
