@@ -2,11 +2,6 @@ package transport
 
 import (
 	"context"
-
-	// init json codec
-	_ "github.com/go-kratos/kratos/v2/encoding/json"
-	// init proto codec
-	_ "github.com/go-kratos/kratos/v2/encoding/proto"
 )
 
 // Server is transport server.

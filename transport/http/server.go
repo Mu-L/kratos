@@ -19,6 +19,9 @@ const SupportPackageIsVersion1 = true
 
 var _ transport.Server = (*Server)(nil)
 
+// DecodeRequestFunc deocder request func.
+type DecodeRequestFunc func(req *http.Request, v interface{}) error
+
 // EncodeResponseFunc is encode response func.
 type EncodeResponseFunc func(res http.ResponseWriter, req *http.Request, v interface{}) error
 
@@ -33,6 +36,7 @@ type serverOptions struct {
 	address         string
 	timeout         time.Duration
 	middleware      middleware.Middleware
+	requestDecoder  DecodeRequestFunc
 	responseEncoder EncodeResponseFunc
 	errorEncoder    EncodeErrorFunc
 	logger          log.Logger
@@ -56,6 +60,13 @@ func Address(addr string) ServerOption {
 func Middleware(m middleware.Middleware) ServerOption {
 	return func(s *serverOptions) {
 		s.middleware = m
+	}
+}
+
+// RequestDecoder with request decoder option.
+func RequestDecoder(fn DecodeRequestFunc) ServerOption {
+	return func(o *serverOptions) {
+		o.requestDecoder = fn
 	}
 }
 
@@ -94,6 +105,7 @@ func NewServer(opts ...ServerOption) *Server {
 		network:         "tcp",
 		address:         ":8000",
 		timeout:         time.Second,
+		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
 		logger:          stdlog.NewLogger(),

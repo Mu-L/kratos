@@ -2,12 +2,12 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
 )
 
@@ -102,13 +102,8 @@ func CheckResponse(res *http.Response) error {
 	if err != nil {
 		return err
 	}
-	contentType := res.Header.Get("content-type")
-	codec := encoding.GetCodec(contentSubtype(contentType))
-	if codec == nil {
-		return errors.Unknown("Unknown", "unknown contentType: %s", contentType)
-	}
 	se := &errors.StatusError{}
-	if err := codec.Unmarshal(data, se); err != nil {
+	if err := json.Unmarshal(data, se); err != nil {
 		return err
 	}
 	return se
@@ -121,10 +116,5 @@ func DecodeResponse(res *http.Response, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	contentType := res.Header.Get("content-type")
-	codec := encoding.GetCodec(contentSubtype(contentType))
-	if codec == nil {
-		return errors.Unknown("Unknown", "unknown contentType: %s", contentType)
-	}
-	return codec.Unmarshal(data, v)
+	return json.Unmarshal(data, v)
 }

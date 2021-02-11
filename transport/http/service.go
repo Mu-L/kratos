@@ -7,7 +7,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-type methodHandler func(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (out interface{}, err error)
+type methodHandler func(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (out interface{}, err error)
 
 // MethodDesc represents a Proto service's method specification.
 type MethodDesc struct {
@@ -33,7 +33,9 @@ func (s *Server) RegisterService(desc *ServiceDesc, impl interface{}) {
 	for _, m := range desc.Methods {
 		h := m.Handler
 		s.router.HandleFunc(m.Path, func(res http.ResponseWriter, req *http.Request) {
-			out, err := h(impl, req.Context(), req, s.opts.middleware)
+			out, err := h(impl, req.Context(), req, func(v interface{}) error {
+				return s.opts.requestDecoder(req, v)
+			}, s.opts.middleware)
 			if err != nil {
 				s.opts.errorEncoder(res, req, err)
 				return

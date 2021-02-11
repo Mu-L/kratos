@@ -16,7 +16,7 @@ func Register{{.ServiceType}}HTTPServer(s http1.ServiceRegistrar, srv {{.Service
 	s.RegisterService(&_HTTP_{{.ServiceType}}_serviceDesc, srv)
 }
 {{range .Methods}}
-func _HTTP_{{$.ServiceType}}_{{.Name}}_{{.Num}}(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_{{$.ServiceType}}_{{.Name}}_{{.Num}}(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in {{.Request}}
 {{if ne (len .Vars) 0}}
 	if err := http1.BindVars(req, &in); err != nil {
@@ -24,15 +24,15 @@ func _HTTP_{{$.ServiceType}}_{{.Name}}_{{.Num}}(srv interface{}, ctx context.Con
 	}
 {{end}}
 {{if eq .Body ""}}
-	if err := http1.BindForm(req, &in); err != nil {
+	if err := http1.BindQuery(req, &in); err != nil {
 		return nil, err
 	}
 {{else if eq .Body ".*"}}
-	if err := http1.BindBody(req, &in); err != nil {
+	if err := dec(&in); err != nil {
 		return nil, err
 	}
 {{else}}
-	if err := http1.BindBody(req, in{{.Body}}); err != nil {
+	if err := dec(in{{.Body}}); err != nil {
 		return nil, err
 	}
 {{end}}

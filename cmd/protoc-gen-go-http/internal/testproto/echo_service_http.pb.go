@@ -28,7 +28,7 @@ func RegisterEchoServiceHTTPServer(s http1.ServiceRegistrar, srv EchoServiceHTTP
 	s.RegisterService(&_HTTP_EchoService_serviceDesc, srv)
 }
 
-func _HTTP_EchoService_Echo_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_Echo_0(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
 	if err := http1.BindVars(req, &in); err != nil {
@@ -49,7 +49,7 @@ func _HTTP_EchoService_Echo_0(srv interface{}, ctx context.Context, req *http.Re
 	return out, nil
 }
 
-func _HTTP_EchoService_Echo_1(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_Echo_1(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
 	if err := http1.BindVars(req, &in); err != nil {
@@ -70,7 +70,7 @@ func _HTTP_EchoService_Echo_1(srv interface{}, ctx context.Context, req *http.Re
 	return out, nil
 }
 
-func _HTTP_EchoService_Echo_2(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_Echo_2(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
 	if err := http1.BindVars(req, &in); err != nil {
@@ -91,7 +91,7 @@ func _HTTP_EchoService_Echo_2(srv interface{}, ctx context.Context, req *http.Re
 	return out, nil
 }
 
-func _HTTP_EchoService_Echo_3(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_Echo_3(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
 	if err := http1.BindVars(req, &in); err != nil {
@@ -112,7 +112,7 @@ func _HTTP_EchoService_Echo_3(srv interface{}, ctx context.Context, req *http.Re
 	return out, nil
 }
 
-func _HTTP_EchoService_Echo_4(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_Echo_4(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
 	if err := http1.BindVars(req, &in); err != nil {
@@ -133,10 +133,10 @@ func _HTTP_EchoService_Echo_4(srv interface{}, ctx context.Context, req *http.Re
 	return out, nil
 }
 
-func _HTTP_EchoService_EchoBody_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_EchoBody_0(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
-	if err := http1.BindBody(req, &in); err != nil {
+	if err := dec(&in); err != nil {
 		return nil, err
 	}
 
@@ -150,7 +150,7 @@ func _HTTP_EchoService_EchoBody_0(srv interface{}, ctx context.Context, req *htt
 	return out, nil
 }
 
-func _HTTP_EchoService_EchoDelete_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_EchoDelete_0(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in SimpleMessage
 
 	if err := http1.BindForm(req, &in); err != nil {
@@ -167,10 +167,10 @@ func _HTTP_EchoService_EchoDelete_0(srv interface{}, ctx context.Context, req *h
 	return out, nil
 }
 
-func _HTTP_EchoService_EchoPatch_0(srv interface{}, ctx context.Context, req *http.Request, m middleware.Middleware) (interface{}, error) {
+func _HTTP_EchoService_EchoPatch_0(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (interface{}, error) {
 	var in DynamicMessageUpdate
 
-	if err := http1.BindBody(req, in.Body); err != nil {
+	if err := dec(in.Body); err != nil {
 		return nil, err
 	}
 

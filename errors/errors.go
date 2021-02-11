@@ -15,7 +15,7 @@ const (
 var _ error = (*StatusError)(nil)
 
 // StatusError contains an error response from the server.
-type StatusError Status
+type StatusError = Status
 
 // Is matches each error in the chain with the target value.
 func (e *StatusError) Is(target error) bool {
