@@ -56,6 +56,13 @@ func Address(addr string) ServerOption {
 	}
 }
 
+// Timeout with server timeout.
+func Timeout(timeout time.Duration) ServerOption {
+	return func(o *serverOptions) {
+		o.timeout = timeout
+	}
+}
+
 // Middleware with server middleware option.
 func Middleware(m middleware.Middleware) ServerOption {
 	return func(s *serverOptions) {
