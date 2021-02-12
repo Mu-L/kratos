@@ -5,7 +5,7 @@ import (
 )
 
 // Decoder is config decoder.
-type Decoder func(*KeyValue, interface{}) error
+type Decoder func(*KeyValue, map[string]interface{}) error
 
 // Option is config option.
 type Option func(*options)

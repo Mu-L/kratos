@@ -45,8 +45,8 @@ type config struct {
 func New(opts ...Option) Config {
 	options := options{
 		logger: stdlog.NewLogger(),
-		decoder: func(kv *KeyValue, v interface{}) error {
-			return json.Unmarshal(kv.Value, v)
+		decoder: func(kv *KeyValue, v map[string]interface{}) error {
+			return json.Unmarshal(kv.Value, &v)
 		},
 	}
 	for _, o := range opts {

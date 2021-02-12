@@ -33,8 +33,8 @@ func (r *reader) Merge(kvs ...*KeyValue) error {
 		return err
 	}
 	for _, kv := range kvs {
-		var next map[string]interface{}
-		if err := r.opts.decoder(kv, &next); err != nil {
+		next := make(map[string]interface{})
+		if err := r.opts.decoder(kv, next); err != nil {
 			return err
 		}
 		if err := mergo.Map(&merged, convertMap(next), mergo.WithOverride); err != nil {
