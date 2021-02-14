@@ -29,9 +29,67 @@ type EncodeResponseFunc func(res http.ResponseWriter, req *http.Request, v inter
 type EncodeErrorFunc func(res http.ResponseWriter, req *http.Request, err error)
 
 // ServerOption is HTTP server option.
-type ServerOption func(*serverOptions)
+type ServerOption func(*Server)
 
-type serverOptions struct {
+// Network with server network.
+func Network(network string) ServerOption {
+	return func(s *Server) {
+		s.network = network
+	}
+}
+
+// Address with server address.
+func Address(addr string) ServerOption {
+	return func(s *Server) {
+		s.address = addr
+	}
+}
+
+// Timeout with server timeout.
+func Timeout(timeout time.Duration) ServerOption {
+	return func(s *Server) {
+		s.timeout = timeout
+	}
+}
+
+// Middleware with server middleware option.
+func Middleware(m middleware.Middleware) ServerOption {
+	return func(s *Server) {
+		s.middleware = m
+	}
+}
+
+// RequestDecoder with request decoder option.
+func RequestDecoder(fn DecodeRequestFunc) ServerOption {
+	return func(s *Server) {
+		s.requestDecoder = fn
+	}
+}
+
+// ResponseEncoder with response handler option.
+func ResponseEncoder(fn EncodeResponseFunc) ServerOption {
+	return func(s *Server) {
+		s.responseEncoder = fn
+	}
+}
+
+// ErrorEncoder with error handler option.
+func ErrorEncoder(fn EncodeErrorFunc) ServerOption {
+	return func(s *Server) {
+		s.errorEncoder = fn
+	}
+}
+
+// Logger with server logger.
+func Logger(logger log.Logger) ServerOption {
+	return func(s *Server) {
+		s.log = log.NewHelper("http", logger)
+	}
+}
+
+// Server is a HTTP server wrapper.
+type Server struct {
+	*http.Server
 	network         string
 	address         string
 	timeout         time.Duration
@@ -39,92 +97,25 @@ type serverOptions struct {
 	requestDecoder  DecodeRequestFunc
 	responseEncoder EncodeResponseFunc
 	errorEncoder    EncodeErrorFunc
-	logger          log.Logger
-}
-
-// Network with server network.
-func Network(network string) ServerOption {
-	return func(o *serverOptions) {
-		o.network = network
-	}
-}
-
-// Address with server address.
-func Address(addr string) ServerOption {
-	return func(o *serverOptions) {
-		o.address = addr
-	}
-}
-
-// Timeout with server timeout.
-func Timeout(timeout time.Duration) ServerOption {
-	return func(o *serverOptions) {
-		o.timeout = timeout
-	}
-}
-
-// Middleware with server middleware option.
-func Middleware(m middleware.Middleware) ServerOption {
-	return func(s *serverOptions) {
-		s.middleware = m
-	}
-}
-
-// RequestDecoder with request decoder option.
-func RequestDecoder(fn DecodeRequestFunc) ServerOption {
-	return func(o *serverOptions) {
-		o.requestDecoder = fn
-	}
-}
-
-// ResponseEncoder with response handler option.
-func ResponseEncoder(fn EncodeResponseFunc) ServerOption {
-	return func(s *serverOptions) {
-		s.responseEncoder = fn
-	}
-}
-
-// ErrorEncoder with error handler option.
-func ErrorEncoder(fn EncodeErrorFunc) ServerOption {
-	return func(s *serverOptions) {
-		s.errorEncoder = fn
-	}
-}
-
-// Logger with server logger.
-func Logger(logger log.Logger) ServerOption {
-	return func(s *serverOptions) {
-		s.logger = logger
-	}
-}
-
-// Server is a HTTP server wrapper.
-type Server struct {
-	*http.Server
-	opts   serverOptions
-	router *mux.Router
-	log    *log.Helper
+	router          *mux.Router
+	log             *log.Helper
 }
 
 // NewServer creates a HTTP server by options.
 func NewServer(opts ...ServerOption) *Server {
-	options := serverOptions{
+	srv := &Server{
 		network:         "tcp",
 		address:         ":8000",
 		timeout:         time.Second,
 		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
-		logger:          stdlog.NewLogger(),
+		log:             log.NewHelper("http", stdlog.NewLogger()),
 	}
 	for _, o := range opts {
-		o(&options)
+		o(srv)
 	}
-	srv := &Server{
-		opts:   options,
-		router: mux.NewRouter(),
-		log:    log.NewHelper("http", options.logger),
-	}
+	srv.router = mux.NewRouter()
 	srv.Server = &http.Server{Handler: srv}
 	return srv
 }
@@ -146,7 +137,7 @@ func (s *Server) HandleFunc(path string, h http.HandlerFunc) {
 
 // ServeHTTP should write reply headers and data to the ResponseWriter and then return.
 func (s *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	ctx, cancel := context.WithTimeout(req.Context(), s.opts.timeout)
+	ctx, cancel := context.WithTimeout(req.Context(), s.timeout)
 	defer cancel()
 	ctx = transport.NewContext(ctx, transport.Transport{Kind: "HTTP"})
 	ctx = NewContext(ctx, ServerInfo{Request: req, Response: res})
@@ -155,11 +146,11 @@ func (s *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 // Start start the HTTP server.
 func (s *Server) Start() error {
-	lis, err := net.Listen(s.opts.network, s.opts.address)
+	lis, err := net.Listen(s.network, s.address)
 	if err != nil {
 		return err
 	}
-	s.log.Infof("[HTTP] server listening on: %s", s.opts.address)
+	s.log.Infof("[HTTP] server listening on: %s", s.address)
 	return s.Serve(lis)
 }
 

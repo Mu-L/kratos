@@ -34,14 +34,14 @@ func (s *Server) RegisterService(desc *ServiceDesc, impl interface{}) {
 		h := m.Handler
 		s.router.HandleFunc(m.Path, func(res http.ResponseWriter, req *http.Request) {
 			out, err := h(impl, req.Context(), req, func(v interface{}) error {
-				return s.opts.requestDecoder(req, v)
-			}, s.opts.middleware)
+				return s.requestDecoder(req, v)
+			}, s.middleware)
 			if err != nil {
-				s.opts.errorEncoder(res, req, err)
+				s.errorEncoder(res, req, err)
 				return
 			}
-			if err := s.opts.responseEncoder(res, req, out); err != nil {
-				s.opts.errorEncoder(res, req, err)
+			if err := s.responseEncoder(res, req, out); err != nil {
+				s.errorEncoder(res, req, err)
 			}
 		}).Methods(m.Method)
 	}

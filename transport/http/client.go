@@ -2,8 +2,6 @@ package http
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -11,57 +9,70 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 )
 
+// DecodeResponseFunc decode response func.
+type DecodeResponseFunc func(res *http.Response, v interface{}) error
+
 // ClientOption is HTTP client option.
 type ClientOption func(*Client)
 
 // WithTimeout with client request timeout.
 func WithTimeout(d time.Duration) ClientOption {
-	return func(o *Client) {
-		o.timeout = d
+	return func(c *Client) {
+		c.timeout = d
 	}
 }
 
 // WithKeepAlive with client keepavlie.
 func WithKeepAlive(d time.Duration) ClientOption {
-	return func(o *Client) {
-		o.keepAlive = d
+	return func(c *Client) {
+		c.keepAlive = d
 	}
 }
 
 // WithMaxIdleConns with client max idle conns.
 func WithMaxIdleConns(n int) ClientOption {
-	return func(o *Client) {
-		o.maxIdleConns = n
+	return func(c *Client) {
+		c.maxIdleConns = n
 	}
 }
 
 // WithUserAgent with client user agent.
 func WithUserAgent(ua string) ClientOption {
-	return func(o *Client) {
-		o.userAgent = ua
+	return func(c *Client) {
+		c.userAgent = ua
+	}
+}
+
+// WithResponseDecoder with response decoder.
+func WithResponseDecoder(d DecodeResponseFunc) ClientOption {
+	return func(c *Client) {
+		c.responseDecoder = d
 	}
 }
 
 // Client is a HTTP transport client.
 type Client struct {
-	base         http.RoundTripper
-	timeout      time.Duration
-	keepAlive    time.Duration
-	maxIdleConns int
-	userAgent    string
+	base            *http.Client
+	round           http.RoundTripper
+	timeout         time.Duration
+	keepAlive       time.Duration
+	maxIdleConns    int
+	userAgent       string
+	responseDecoder DecodeResponseFunc
 }
 
 // NewClient new a HTTP transport client.
-func NewClient(opts ...ClientOption) (*http.Client, error) {
+func NewClient(opts ...ClientOption) (*Client, error) {
 	client := &Client{
-		timeout:      500 * time.Millisecond,
-		keepAlive:    30 * time.Second,
-		maxIdleConns: 100,
+		timeout:         500 * time.Millisecond,
+		keepAlive:       30 * time.Second,
+		maxIdleConns:    100,
+		responseDecoder: DefaultResponseDecoder,
 	}
 	for _, o := range opts {
 		o(client)
 	}
-	client.base = &http.Transport{
+	client.round = &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout:   client.timeout,
 			KeepAlive: client.keepAlive,
@@ -74,7 +85,13 @@ func NewClient(opts ...ClientOption) (*http.Client, error) {
 		TLSHandshakeTimeout:   client.timeout,
 		ExpectContinueTimeout: client.timeout,
 	}
-	return &http.Client{Transport: client}, nil
+	client.base = &http.Client{Transport: client}
+	return client, nil
+}
+
+// Do sends an HTTP request and returns an HTTP response.
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	return c.base.Do(req)
 }
 
 // RoundTrip is transport round trip.
@@ -84,7 +101,7 @@ func (c *Client) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	ctx, cancel := context.WithTimeout(req.Context(), c.timeout)
 	defer cancel()
-	res, err := c.base.RoundTrip(req.WithContext(ctx))
+	res, err := c.round.RoundTrip(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -93,28 +110,18 @@ func (c *Client) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // CheckResponse returns an error (of type *Error) if the response
 // status code is not 2xx.
-func CheckResponse(res *http.Response) error {
+func (c *Client) CheckResponse(res *http.Response) error {
 	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		return nil
 	}
-	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
 	se := &errors.StatusError{}
-	if err := json.Unmarshal(data, se); err != nil {
+	if err := c.responseDecoder(res, se); err != nil {
 		return err
 	}
 	return se
 }
 
 // DecodeResponse decodes the body of res into target. If there is no body, target is unchanged.
-func DecodeResponse(res *http.Response, v interface{}) error {
-	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(data, v)
+func (c *Client) DecodeResponse(res *http.Response, v interface{}) error {
+	return c.responseDecoder(res, v)
 }

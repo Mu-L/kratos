@@ -1,92 +1,79 @@
 package http
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
-	"google.golang.org/protobuf/proto"
+	"github.com/go-kratos/kratos/v2/transport/http/json"
+	"github.com/go-kratos/kratos/v2/transport/http/proto"
 )
 
 var (
-	// MIMEJSON is json content type.
-	MIMEJSON = "application/json"
-	// MIMEPROTOBUF is protobuf content type.
-	MIMEPROTOBUF = "application/proto"
+	// DefaultRequestDecoders is default request encoders.
+	DefaultRequestDecoders = map[string]DecodeRequestFunc{
+		"application/json":  json.DecodeRequest,
+		"application/proto": proto.DecodeRequest,
+	}
+	// DefaultResponseEncoders is default response encoders.
+	DefaultResponseEncoders = map[string]EncodeResponseFunc{
+		"application/json":  json.EncodeResponse,
+		"application/proto": proto.EncodeResponse,
+	}
+	// DefaultResponseDecoders is default response decoders.
+	DefaultResponseDecoders = map[string]DecodeResponseFunc{
+		"application/json":  json.DecodeResponse,
+		"application/proto": proto.DecodeResponse,
+	}
 )
 
 func stripContentType(contentType string) string {
-	i := strings.Index(contentType, ";")
-	if i != -1 {
-		contentType = contentType[:i]
+	idx := strings.Index(contentType, ";")
+	if idx != -1 {
+		contentType = contentType[:idx]
 	}
 	return contentType
 }
 
-func marshalForAccepts(req *http.Request, v interface{}) (string, []byte, error) {
-	contentType := stripContentType(req.Header.Get("accept"))
-	switch contentType {
-	case MIMEPROTOBUF:
-		data, err := proto.Marshal(v.(proto.Message))
-		if err != nil {
-			return "", nil, err
-		}
-		return MIMEPROTOBUF, data, nil
-	default:
-		data, err := json.Marshal(v)
-		if err != nil {
-			return "", nil, err
-		}
-		return MIMEJSON, data, nil
+// DefaultResponseDecoder is default response decoders.
+func DefaultResponseDecoder(res *http.Response, v interface{}) error {
+	contentType := stripContentType(res.Header.Get("content-type"))
+	decode, ok := DefaultResponseDecoders[contentType]
+	if ok {
+		return decode(res, v)
 	}
+	return json.DecodeResponse(res, v)
+
 }
 
-// DefaultRequestDecoder default request decoder.
+// DefaultRequestDecoder is default request decoder.
 func DefaultRequestDecoder(req *http.Request, v interface{}) error {
-	data, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return err
+	contentType := stripContentType(req.Header.Get("content-type"))
+	decode, ok := DefaultRequestDecoders[contentType]
+	if ok {
+		return decode(req, v)
 	}
-	defer req.Body.Close()
-	contentType := req.Header.Get("content-type")
-	switch contentType {
-	case MIMEJSON:
-		if err = json.Unmarshal(data, v); err != nil {
-			return err
-		}
-	case MIMEPROTOBUF:
-		if err = proto.Unmarshal(data, v.(proto.Message)); err != nil {
-			return err
-		}
-	default:
-		if err := BindQuery(req, v.(proto.Message)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return json.DecodeRequest(req, v)
 }
 
 // DefaultResponseEncoder is default response encoder.
 func DefaultResponseEncoder(res http.ResponseWriter, req *http.Request, v interface{}) error {
-	contentType, data, err := marshalForAccepts(req, v)
-	if err != nil {
-		return err
+	contentType := stripContentType(req.Header.Get("accept"))
+	encode, ok := DefaultResponseEncoders[contentType]
+	if ok {
+		return encode(res, req, v)
 	}
-	res.Header().Set("content-type", contentType)
-	res.Write(data)
-	return nil
+	return json.EncodeResponse(res, req, v)
 }
 
 // DefaultErrorEncoder is default errors encoder.
 func DefaultErrorEncoder(res http.ResponseWriter, req *http.Request, err error) {
 	code, se := StatusError(err)
-	contentType, data, err := marshalForAccepts(req, se)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res.Header().Set("content-type", contentType)
 	res.WriteHeader(code)
-	res.Write(data)
+	encode, ok := DefaultResponseEncoders[stripContentType(req.Header.Get("accept"))]
+	if !ok {
+		encode = json.EncodeResponse
+	}
+	if err := encode(res, req, se); err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+	}
 }
