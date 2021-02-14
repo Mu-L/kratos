@@ -1,7 +1,7 @@
 package main
 
 import (
-	pb "github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/proto"
+	pb "github.com/go-kratos/kratos/v2/api/kratos/api"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
