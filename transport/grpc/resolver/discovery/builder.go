@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/registry"
 	"google.golang.org/grpc/resolver"
 )
@@ -25,7 +26,10 @@ type builder struct {
 
 // NewBuilder creates a builder which is used to factory registry resolvers.
 func NewBuilder(r registry.Registry, opts ...Option) resolver.Builder {
-	b := &builder{registry: r}
+	b := &builder{
+		registry: r,
+		log:      log.NewHelper(name, stdlog.NewLogger()),
+	}
 	for _, o := range opts {
 		o(b)
 	}
