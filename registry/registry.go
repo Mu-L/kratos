@@ -3,11 +3,11 @@ package registry
 // Registry is service registry.
 type Registry interface {
 	// Register the registration.
-	Register(service *Service) error
+	Register(service *ServiceInstance) error
 	// Deregister the registration.
-	Deregister(service *Service) error
-	// GetService return the service instances in memory according to the service name.
-	GetService(name string) ([]*Service, error)
+	Deregister(service *ServiceInstance) error
+	// Service return the service instances in memory according to the service name.
+	Service(name string) ([]*ServiceInstance, error)
 	// Watch creates a watcher according to the service name.
 	Watch(name string) (Watcher, error)
 }
@@ -18,13 +18,13 @@ type Watcher interface {
 	// 1.the first time to watch and the service instance list is not empty.
 	// 2.any service instance changes found.
 	// if the above two conditions are not met, it will block until context deadline exceeded or canceled
-	Next() ([]*Service, error)
+	Next() ([]*ServiceInstance, error)
 	// Close close the watcher.
 	Close() error
 }
 
-// Service is an instance of a service in a discovery system.
-type Service struct {
+// ServiceInstance is an instance of a service in a discovery system.
+type ServiceInstance struct {
 	// ID is the unique instance ID as registered.
 	ID string
 	// Name is the service name as registered.

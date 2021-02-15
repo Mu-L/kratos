@@ -28,8 +28,8 @@ type options struct {
 	servers  []transport.Server
 }
 
-func (o options) Service() *registry.Service {
-	return &registry.Service{
+func (o options) Service() *registry.ServiceInstance {
+	return &registry.ServiceInstance{
 		ID:        o.id,
 		Name:      o.name,
 		Version:   o.version,
