@@ -6,78 +6,96 @@ import (
 
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
+	"github.com/go-kratos/kratos/v2/registry"
+	"github.com/go-kratos/kratos/v2/transport/grpc/resolver/discovery"
 
 	"google.golang.org/grpc"
 )
 
 // ClientOption is gRPC client option.
-type ClientOption func(o *clientOptions)
+type ClientOption func(o *Client)
 
 // WithContext with client context.
 func WithContext(ctx context.Context) ClientOption {
-	return func(c *clientOptions) {
+	return func(c *Client) {
 		c.ctx = ctx
 	}
 }
 
 // WithTimeout with client timeout.
 func WithTimeout(timeout time.Duration) ClientOption {
-	return func(c *clientOptions) {
+	return func(c *Client) {
 		c.timeout = timeout
 	}
 }
 
 // WithInsecure with client insecure.
 func WithInsecure() ClientOption {
-	return func(c *clientOptions) {
+	return func(c *Client) {
 		c.insecure = true
 	}
 }
 
-// WithMiddleware with server middleware.
+// WithMiddleware with client middleware.
 func WithMiddleware(m middleware.Middleware) ClientOption {
-	return func(c *clientOptions) {
+	return func(c *Client) {
 		c.middleware = m
+	}
+}
+
+// WithRegistry with client registry.
+func WithRegistry(r registry.Registry) ClientOption {
+	return func(c *Client) {
+		c.registry = r
 	}
 }
 
 // WithOptions with gRPC options.
 func WithOptions(opts ...grpc.DialOption) ClientOption {
-	return func(c *clientOptions) {
+	return func(c *Client) {
 		c.grpcOpts = opts
 	}
 }
 
-type clientOptions struct {
+// Client is gRPC Client
+type Client struct {
+	*grpc.ClientConn
 	ctx        context.Context
 	insecure   bool
 	timeout    time.Duration
 	middleware middleware.Middleware
+	registry   registry.Registry
 	grpcOpts   []grpc.DialOption
 }
 
 // NewClient new a grpc transport client.
-func NewClient(target string, opts ...ClientOption) (*grpc.ClientConn, error) {
-	options := clientOptions{
+func NewClient(target string, opts ...ClientOption) (client *Client, err error) {
+	client = &Client{
 		ctx:        context.Background(),
 		timeout:    500 * time.Millisecond,
 		insecure:   false,
 		middleware: recovery.Recovery(),
 	}
 	for _, o := range opts {
-		o(&options)
+		o(client)
 	}
 	var grpcOpts = []grpc.DialOption{
-		grpc.WithTimeout(options.timeout),
-		grpc.WithUnaryInterceptor(UnaryClientInterceptor(options.middleware)),
+		grpc.WithTimeout(client.timeout),
+		grpc.WithUnaryInterceptor(UnaryClientInterceptor(client.middleware)),
 	}
-	if options.insecure {
+	if client.registry != nil {
+		grpc.WithResolvers(discovery.NewBuilder(client.registry))
+	}
+	if client.insecure {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
-	if len(options.grpcOpts) > 0 {
-		grpcOpts = append(grpcOpts, options.grpcOpts...)
+	if len(client.grpcOpts) > 0 {
+		grpcOpts = append(grpcOpts, client.grpcOpts...)
 	}
-	return grpc.DialContext(options.ctx, target, grpcOpts...)
+	if client.ClientConn, err = grpc.DialContext(client.ctx, target, grpcOpts...); err != nil {
+		return
+	}
+	return
 }
 
 // UnaryClientInterceptor retruns a unary client interceptor.
