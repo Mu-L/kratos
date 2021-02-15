@@ -8,6 +8,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport"
 
 	"google.golang.org/grpc"
@@ -16,115 +17,93 @@ import (
 var _ transport.Server = (*Server)(nil)
 
 // ServerOption is gRPC server option.
-type ServerOption func(o *serverOptions)
-
-type serverOptions struct {
-	network     string
-	address     string
-	timeout     time.Duration
-	interceptor grpc.UnaryServerInterceptor
-	middleware  middleware.Middleware
-	grpcOpts    []grpc.ServerOption
-	logger      log.Logger
-}
+type ServerOption func(o *Server)
 
 // Network with server network.
 func Network(network string) ServerOption {
-	return func(o *serverOptions) {
-		o.network = network
+	return func(s *Server) {
+		s.network = network
 	}
 }
 
 // Address with server address.
 func Address(addr string) ServerOption {
-	return func(o *serverOptions) {
-		o.address = addr
+	return func(s *Server) {
+		s.address = addr
 	}
 }
 
 // Timeout with server timeout.
 func Timeout(timeout time.Duration) ServerOption {
-	return func(o *serverOptions) {
-		o.timeout = timeout
-	}
-}
-
-// UnaryInterceptor with server interceptor.
-func UnaryInterceptor(in grpc.UnaryServerInterceptor) ServerOption {
-	return func(o *serverOptions) {
-		o.interceptor = in
+	return func(s *Server) {
+		s.timeout = timeout
 	}
 }
 
 // Middleware with server middleware.
 func Middleware(m middleware.Middleware) ServerOption {
-	return func(o *serverOptions) {
-		o.middleware = m
+	return func(s *Server) {
+		s.middleware = m
 	}
 }
 
 // Logger with server logger.
 func Logger(logger log.Logger) ServerOption {
-	return func(o *serverOptions) {
-		o.logger = logger
+	return func(s *Server) {
+		s.log = log.NewHelper("grpc", logger)
 	}
 }
 
 // Options with grpc options.
 func Options(opts ...grpc.ServerOption) ServerOption {
-	return func(o *serverOptions) {
-		o.grpcOpts = opts
+	return func(s *Server) {
+		s.grpcOpts = opts
 	}
 }
 
 // Server is a gRPC server wrapper.
 type Server struct {
 	*grpc.Server
-	opts serverOptions
-	log  *log.Helper
+	network    string
+	address    string
+	timeout    time.Duration
+	middleware middleware.Middleware
+	grpcOpts   []grpc.ServerOption
+	log        *log.Helper
 }
 
 // NewServer creates a gRPC server by options.
 func NewServer(opts ...ServerOption) *Server {
-	options := serverOptions{
-		network: "tcp",
-		address: ":9000",
-		timeout: time.Second,
-		logger:  stdlog.NewLogger(),
+	srv := &Server{
+		network:    "tcp",
+		address:    ":9000",
+		timeout:    time.Second,
+		middleware: recovery.Recovery(),
+		log:        log.NewHelper("grpc", stdlog.NewLogger()),
 	}
 	for _, o := range opts {
-		o(&options)
+		o(srv)
 	}
 	var grpcOpts = []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
-			UnaryServerInterceptor(options.middleware),
-			UnaryTimeoutInterceptor(options.timeout),
+			UnaryServerInterceptor(srv.middleware),
+			UnaryTimeoutInterceptor(srv.timeout),
 		),
 	}
-	if options.interceptor != nil {
-		grpcOpts = append(grpcOpts, grpc.ChainUnaryInterceptor(
-			options.interceptor,
-			UnaryServerInterceptor(options.middleware),
-			UnaryTimeoutInterceptor(options.timeout),
-		))
+	if len(srv.grpcOpts) > 0 {
+		grpcOpts = append(grpcOpts, srv.grpcOpts...)
 	}
-	if len(options.grpcOpts) > 0 {
-		grpcOpts = append(grpcOpts, options.grpcOpts...)
-	}
-	return &Server{
-		opts:   options,
-		Server: grpc.NewServer(grpcOpts...),
-		log:    log.NewHelper("grpc", options.logger),
-	}
+	srv.Server = grpc.NewServer(grpcOpts...)
+	return srv
 }
 
 // Start start the gRPC server.
 func (s *Server) Start() error {
-	lis, err := net.Listen(s.opts.network, s.opts.address)
+	lis, err := net.Listen(s.network, s.address)
 	if err != nil {
 		return err
 	}
-	s.log.Infof("[gRPC] server listening on: %s", s.opts.address)
+	s.log.Infof("[gRPC] server listening on: %s", s.address)
 	return s.Serve(lis)
 }
 
@@ -155,10 +134,6 @@ func UnaryServerInterceptor(m middleware.Middleware) grpc.UnaryServerInterceptor
 		if m != nil {
 			h = m(h)
 		}
-		reply, err := h(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return reply, nil
+		return h(ctx, req)
 	}
 }

@@ -46,28 +46,28 @@ func WithUserAgent(ua string) ClientOption {
 // WithResponseDecoder with response decoder.
 func WithResponseDecoder(d DecodeResponseFunc) ClientOption {
 	return func(c *Client) {
-		c.responseDecoder = d
+		c.decoder = d
 	}
 }
 
 // Client is a HTTP transport client.
 type Client struct {
-	base            *http.Client
-	round           http.RoundTripper
-	timeout         time.Duration
-	keepAlive       time.Duration
-	maxIdleConns    int
-	userAgent       string
-	responseDecoder DecodeResponseFunc
+	base         *http.Client
+	round        http.RoundTripper
+	timeout      time.Duration
+	keepAlive    time.Duration
+	maxIdleConns int
+	userAgent    string
+	decoder      DecodeResponseFunc
 }
 
 // NewClient new a HTTP transport client.
 func NewClient(opts ...ClientOption) (*Client, error) {
 	client := &Client{
-		timeout:         500 * time.Millisecond,
-		keepAlive:       30 * time.Second,
-		maxIdleConns:    100,
-		responseDecoder: DefaultResponseDecoder,
+		timeout:      500 * time.Millisecond,
+		keepAlive:    30 * time.Second,
+		maxIdleConns: 100,
+		decoder:      DefaultResponseDecoder,
 	}
 	for _, o := range opts {
 		o(client)
@@ -115,7 +115,7 @@ func (c *Client) CheckResponse(res *http.Response) error {
 		return nil
 	}
 	se := &errors.StatusError{}
-	if err := c.responseDecoder(res, se); err != nil {
+	if err := c.decoder(res, se); err != nil {
 		return err
 	}
 	return se
@@ -123,5 +123,5 @@ func (c *Client) CheckResponse(res *http.Response) error {
 
 // DecodeResponse decodes the body of res into target. If there is no body, target is unchanged.
 func (c *Client) DecodeResponse(res *http.Response, v interface{}) error {
-	return c.responseDecoder(res, v)
+	return c.decoder(res, v)
 }

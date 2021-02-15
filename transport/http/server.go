@@ -9,6 +9,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport"
 
 	"github.com/gorilla/mux"
@@ -110,6 +111,7 @@ func NewServer(opts ...ServerOption) *Server {
 		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
+		middleware:      recovery.Recovery(),
 		log:             log.NewHelper("http", stdlog.NewLogger()),
 	}
 	for _, o := range opts {

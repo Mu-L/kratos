@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/recovery"
 
 	"google.golang.org/grpc"
 )
@@ -33,42 +34,35 @@ func WithInsecure() ClientOption {
 	}
 }
 
-// WithUnaryInterceptor with unary client interceptor.
-func WithUnaryInterceptor(in grpc.UnaryClientInterceptor) ClientOption {
-	return func(c *clientOptions) {
-		c.interceptor = in
-	}
-}
-
 // WithMiddleware with server middleware.
 func WithMiddleware(m middleware.Middleware) ClientOption {
-	return func(o *clientOptions) {
-		o.middleware = m
+	return func(c *clientOptions) {
+		c.middleware = m
 	}
 }
 
 // WithOptions with gRPC options.
 func WithOptions(opts ...grpc.DialOption) ClientOption {
-	return func(o *clientOptions) {
-		o.grpcOpts = opts
+	return func(c *clientOptions) {
+		c.grpcOpts = opts
 	}
 }
 
 type clientOptions struct {
-	ctx         context.Context
-	insecure    bool
-	timeout     time.Duration
-	interceptor grpc.UnaryClientInterceptor
-	middleware  middleware.Middleware
-	grpcOpts    []grpc.DialOption
+	ctx        context.Context
+	insecure   bool
+	timeout    time.Duration
+	middleware middleware.Middleware
+	grpcOpts   []grpc.DialOption
 }
 
 // NewClient new a grpc transport client.
 func NewClient(target string, opts ...ClientOption) (*grpc.ClientConn, error) {
 	options := clientOptions{
-		ctx:      context.Background(),
-		timeout:  500 * time.Millisecond,
-		insecure: false,
+		ctx:        context.Background(),
+		timeout:    500 * time.Millisecond,
+		insecure:   false,
+		middleware: recovery.Recovery(),
 	}
 	for _, o := range opts {
 		o(&options)
@@ -76,12 +70,6 @@ func NewClient(target string, opts ...ClientOption) (*grpc.ClientConn, error) {
 	var grpcOpts = []grpc.DialOption{
 		grpc.WithTimeout(options.timeout),
 		grpc.WithUnaryInterceptor(UnaryClientInterceptor(options.middleware)),
-	}
-	if options.interceptor != nil {
-		grpcOpts = append(grpcOpts, grpc.WithChainUnaryInterceptor(
-			options.interceptor,
-			UnaryClientInterceptor(options.middleware),
-		))
 	}
 	if options.insecure {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
