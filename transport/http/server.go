@@ -140,6 +140,17 @@ func (s *Server) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	s.router.ServeHTTP(res, req.WithContext(ctx))
 }
 
+// Endpoint return a real address to registry endpoint.
+// examples:
+//   http://127.0.0.1:8000?isSecure=false
+func (s *Server) Endpoint() (string, error) {
+	addr, err := host.Extract(s.address, s.lis)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("http://%s", addr), nil
+}
+
 // Start start the HTTP server.
 func (s *Server) Start() error {
 	lis, err := net.Listen(s.network, s.address)
@@ -155,15 +166,4 @@ func (s *Server) Start() error {
 func (s *Server) Stop() error {
 	logger.Info("[HTTP] server stopping")
 	return s.Shutdown(context.Background())
-}
-
-// Endpoint return a real address to registry endpoint.
-// examples:
-//   http://127.0.0.1:8000?isSecure=false
-func (s *Server) Endpoint() (string, error) {
-	addr, err := host.Extract(s.address, s.lis)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("http://%s", addr), err
 }

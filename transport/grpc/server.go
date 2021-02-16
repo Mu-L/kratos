@@ -103,7 +103,7 @@ func (s *Server) Endpoint() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("grpc://%s", addr), err
+	return fmt.Sprintf("grpc://%s", addr), nil
 }
 
 // Start start the gRPC server.
