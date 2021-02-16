@@ -28,7 +28,14 @@ type options struct {
 	servers  []transport.Server
 }
 
-func (o options) Service() *registry.ServiceInstance {
+func (o options) ServiceInstance() *registry.ServiceInstance {
+	if len(o.endpoints) == 0 {
+		for _, srv := range o.servers {
+			if e, err := srv.Endpoint(); err == nil {
+				o.endpoints = append(o.endpoints, e)
+			}
+		}
+	}
 	return &registry.ServiceInstance{
 		ID:        o.id,
 		Name:      o.name,

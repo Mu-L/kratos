@@ -53,7 +53,7 @@ func (a *App) Run() error {
 		})
 	}
 	if a.opts.registry != nil {
-		if err := a.opts.registry.Register(a.opts.Service()); err != nil {
+		if err := a.opts.registry.Register(a.opts.ServiceInstance()); err != nil {
 			return err
 		}
 	}
@@ -78,7 +78,7 @@ func (a *App) Run() error {
 // Stop gracefully stops the application.
 func (a *App) Stop() error {
 	if a.opts.registry != nil {
-		if err := a.opts.registry.Deregister(a.opts.Service()); err != nil {
+		if err := a.opts.registry.Deregister(a.opts.ServiceInstance()); err != nil {
 			return err
 		}
 	}

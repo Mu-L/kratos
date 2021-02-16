@@ -2,9 +2,11 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/internal/host"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -95,6 +97,17 @@ func NewServer(opts ...ServerOption) *Server {
 	}
 	srv.Server = grpc.NewServer(grpcOpts...)
 	return srv
+}
+
+// Endpoint return a real address to registry endpoint.
+// examples:
+//   grpc://127.0.0.1:9000?isSecure=false
+func (s *Server) Endpoint() (string, error) {
+	addr, err := host.Extract(s.address)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("grpc://%s", addr), err
 }
 
 // Start start the gRPC server.

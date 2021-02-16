@@ -2,10 +2,12 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/internal/host"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -160,4 +162,15 @@ func (s *Server) Start() error {
 func (s *Server) Stop() error {
 	s.log.Info("[HTTP] server stopping")
 	return s.Shutdown(context.Background())
+}
+
+// Endpoint return a real address to registry endpoint.
+// examples:
+//   http://127.0.0.1:8000?isSecure=false
+func (s *Server) Endpoint() (string, error) {
+	addr, err := host.Extract(s.address)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("http://%s", addr), err
 }
