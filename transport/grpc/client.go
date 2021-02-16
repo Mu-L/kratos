@@ -13,89 +13,84 @@ import (
 )
 
 // ClientOption is gRPC client option.
-type ClientOption func(o *Client)
+type ClientOption func(o *clientOptions)
 
-// WithContext with client context.
-func WithContext(ctx context.Context) ClientOption {
-	return func(c *Client) {
-		c.ctx = ctx
+// WithEndpoint with client endpoint.
+func WithEndpoint(endpoint string) ClientOption {
+	return func(o *clientOptions) {
+		o.endpoint = endpoint
 	}
 }
 
 // WithTimeout with client timeout.
 func WithTimeout(timeout time.Duration) ClientOption {
-	return func(c *Client) {
-		c.timeout = timeout
-	}
-}
-
-// WithInsecure with client insecure.
-func WithInsecure() ClientOption {
-	return func(c *Client) {
-		c.insecure = true
+	return func(o *clientOptions) {
+		o.timeout = timeout
 	}
 }
 
 // WithMiddleware with client middleware.
 func WithMiddleware(m middleware.Middleware) ClientOption {
-	return func(c *Client) {
-		c.middleware = m
+	return func(o *clientOptions) {
+		o.middleware = m
 	}
 }
 
 // WithRegistry with client registry.
 func WithRegistry(r registry.Registry) ClientOption {
-	return func(c *Client) {
-		c.registry = r
+	return func(o *clientOptions) {
+		o.registry = r
 	}
 }
 
 // WithOptions with gRPC options.
 func WithOptions(opts ...grpc.DialOption) ClientOption {
-	return func(c *Client) {
-		c.grpcOpts = opts
+	return func(o *clientOptions) {
+		o.grpcOpts = opts
 	}
 }
 
-// Client is gRPC Client
-type Client struct {
-	*grpc.ClientConn
-	ctx        context.Context
-	insecure   bool
+// clientOptions is gRPC Client
+type clientOptions struct {
+	endpoint   string
 	timeout    time.Duration
 	middleware middleware.Middleware
 	registry   registry.Registry
 	grpcOpts   []grpc.DialOption
 }
 
-// NewClient new a grpc transport client.
-func NewClient(target string, opts ...ClientOption) (client *Client, err error) {
-	client = &Client{
-		ctx:        context.Background(),
+// Dial returns a GRPC connection.
+func Dial(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, false, opts...)
+}
+
+// DialInsecure returns an insecure GRPC connection.
+func DialInsecure(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, true, opts...)
+}
+
+func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
+	options := clientOptions{
 		timeout:    500 * time.Millisecond,
-		insecure:   false,
 		middleware: recovery.Recovery(),
 	}
 	for _, o := range opts {
-		o(client)
+		o(&options)
 	}
 	var grpcOpts = []grpc.DialOption{
-		grpc.WithTimeout(client.timeout),
-		grpc.WithUnaryInterceptor(UnaryClientInterceptor(client.middleware)),
+		grpc.WithTimeout(options.timeout),
+		grpc.WithUnaryInterceptor(UnaryClientInterceptor(options.middleware)),
 	}
-	if client.registry != nil {
-		grpc.WithResolvers(discovery.NewBuilder(client.registry))
+	if options.registry != nil {
+		grpc.WithResolvers(discovery.NewBuilder(options.registry))
 	}
-	if client.insecure {
+	if insecure {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
-	if len(client.grpcOpts) > 0 {
-		grpcOpts = append(grpcOpts, client.grpcOpts...)
+	if len(options.grpcOpts) > 0 {
+		grpcOpts = append(grpcOpts, options.grpcOpts...)
 	}
-	if client.ClientConn, err = grpc.DialContext(client.ctx, target, grpcOpts...); err != nil {
-		return
-	}
-	return
+	return grpc.DialContext(ctx, options.endpoint, grpcOpts...)
 }
 
 // UnaryClientInterceptor retruns a unary client interceptor.

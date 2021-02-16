@@ -78,7 +78,7 @@ type Server struct {
 func NewServer(opts ...ServerOption) *Server {
 	srv := &Server{
 		network:    "tcp",
-		address:    ":9000",
+		address:    ":0",
 		timeout:    time.Second,
 		middleware: recovery.Recovery(),
 		log:        log.NewHelper("grpc", stdlog.NewLogger()),

@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"time"
 
@@ -13,95 +12,74 @@ import (
 type DecodeResponseFunc func(res *http.Response, v interface{}) error
 
 // ClientOption is HTTP client option.
-type ClientOption func(*Client)
+type ClientOption func(*clientOptions)
 
 // WithTimeout with client request timeout.
 func WithTimeout(d time.Duration) ClientOption {
-	return func(c *Client) {
-		c.timeout = d
-	}
-}
-
-// WithKeepAlive with client keepavlie.
-func WithKeepAlive(d time.Duration) ClientOption {
-	return func(c *Client) {
-		c.keepAlive = d
-	}
-}
-
-// WithMaxIdleConns with client max idle conns.
-func WithMaxIdleConns(n int) ClientOption {
-	return func(c *Client) {
-		c.maxIdleConns = n
+	return func(o *clientOptions) {
+		o.timeout = d
 	}
 }
 
 // WithUserAgent with client user agent.
 func WithUserAgent(ua string) ClientOption {
-	return func(c *Client) {
-		c.userAgent = ua
+	return func(o *clientOptions) {
+		o.userAgent = ua
 	}
 }
 
-// WithResponseDecoder with response decoder.
-func WithResponseDecoder(d DecodeResponseFunc) ClientOption {
-	return func(c *Client) {
-		c.decoder = d
+// WithTransport with client transport.
+func WithTransport(trans http.RoundTripper) ClientOption {
+	return func(o *clientOptions) {
+		o.transport = trans
 	}
 }
 
 // Client is a HTTP transport client.
-type Client struct {
-	base         *http.Client
-	round        http.RoundTripper
-	timeout      time.Duration
-	keepAlive    time.Duration
-	maxIdleConns int
-	userAgent    string
-	decoder      DecodeResponseFunc
+type clientOptions struct {
+	timeout   time.Duration
+	userAgent string
+	transport http.RoundTripper
 }
 
-// NewClient new a HTTP transport client.
-func NewClient(opts ...ClientOption) (*Client, error) {
-	client := &Client{
-		timeout:      500 * time.Millisecond,
-		keepAlive:    30 * time.Second,
-		maxIdleConns: 100,
-		decoder:      DefaultResponseDecoder,
+// NewClient returns an HTTP client.
+func NewClient(ctx context.Context, opts ...ClientOption) (*http.Client, error) {
+	trans, err := NewTransport(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: trans}, nil
+}
+
+// NewTransport creates an http.RoundTripper.
+func NewTransport(ctx context.Context, opts ...ClientOption) (http.RoundTripper, error) {
+	options := &clientOptions{
+		timeout:   500 * time.Millisecond,
+		transport: http.DefaultTransport,
 	}
 	for _, o := range opts {
-		o(client)
+		o(options)
 	}
-	client.round = &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   client.timeout,
-			KeepAlive: client.keepAlive,
-			DualStack: true,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          client.maxIdleConns,
-		MaxIdleConnsPerHost:   client.maxIdleConns,
-		IdleConnTimeout:       client.keepAlive,
-		TLSHandshakeTimeout:   client.timeout,
-		ExpectContinueTimeout: client.timeout,
-	}
-	client.base = &http.Client{Transport: client}
-	return client, nil
+	return &baseTransport{
+		userAgent: options.userAgent,
+		timeout:   options.timeout,
+		base:      options.transport,
+	}, nil
 }
 
-// Do sends an HTTP request and returns an HTTP response.
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	return c.base.Do(req)
+type baseTransport struct {
+	userAgent string
+	timeout   time.Duration
+	base      http.RoundTripper
 }
 
-// RoundTrip is transport round trip.
-func (c *Client) RoundTrip(req *http.Request) (*http.Response, error) {
-	if c.userAgent != "" && req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", c.userAgent)
+func (t *baseTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.userAgent != "" && req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", t.userAgent)
 	}
-	ctx, cancel := context.WithTimeout(req.Context(), c.timeout)
+	ctx, cancel := context.WithTimeout(req.Context(), t.timeout)
 	defer cancel()
-	res, err := c.round.RoundTrip(req.WithContext(ctx))
+	res, err := t.base.RoundTrip(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -110,18 +88,18 @@ func (c *Client) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // CheckResponse returns an error (of type *Error) if the response
 // status code is not 2xx.
-func (c *Client) CheckResponse(res *http.Response) error {
+func CheckResponse(res *http.Response) error {
 	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		return nil
 	}
 	se := &errors.StatusError{}
-	if err := c.decoder(res, se); err != nil {
+	if err := DefaultResponseDecoder(res, se); err != nil {
 		return err
 	}
 	return se
 }
 
 // DecodeResponse decodes the body of res into target. If there is no body, target is unchanged.
-func (c *Client) DecodeResponse(res *http.Response, v interface{}) error {
-	return c.decoder(res, v)
+func DecodeResponse(res *http.Response, v interface{}) error {
+	return DefaultResponseDecoder(res, v)
 }

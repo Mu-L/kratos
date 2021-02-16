@@ -108,7 +108,7 @@ type Server struct {
 func NewServer(opts ...ServerOption) *Server {
 	srv := &Server{
 		network:         "tcp",
-		address:         ":8000",
+		address:         ":0",
 		timeout:         time.Second,
 		requestDecoder:  DefaultRequestDecoder,
 		responseEncoder: DefaultResponseEncoder,
