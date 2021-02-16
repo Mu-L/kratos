@@ -22,8 +22,8 @@ type options struct {
 	handler HandlerFunc
 }
 
-// Handler with status handler.
-func Handler(h HandlerFunc) Option {
+// WithHandler with status handler.
+func WithHandler(h HandlerFunc) Option {
 	return func(o *options) {
 		o.handler = h
 	}
@@ -32,7 +32,7 @@ func Handler(h HandlerFunc) Option {
 // Server is an error middleware.
 func Server(opts ...Option) middleware.Middleware {
 	options := options{
-		handler: encode,
+		handler: errorEncode,
 	}
 	for _, o := range opts {
 		o(&options)
@@ -51,7 +51,7 @@ func Server(opts ...Option) middleware.Middleware {
 // Client is an error middleware.
 func Client(opts ...Option) middleware.Middleware {
 	options := options{
-		handler: decode,
+		handler: errorDecode,
 	}
 	for _, o := range opts {
 		o(&options)
@@ -67,7 +67,7 @@ func Client(opts ...Option) middleware.Middleware {
 	}
 }
 
-func encode(err error) error {
+func errorEncode(err error) error {
 	se, ok := errors.FromError(err)
 	if !ok {
 		se = &errors.StatusError{
@@ -95,7 +95,7 @@ func encode(err error) error {
 	return gs.Err()
 }
 
-func decode(err error) error {
+func errorDecode(err error) error {
 	gs := status.Convert(err)
 	se := &errors.StatusError{
 		Code:    int32(gs.Code()),
