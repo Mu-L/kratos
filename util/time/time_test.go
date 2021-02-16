@@ -8,8 +8,7 @@ import (
 
 func TestShrink(t *testing.T) {
 	var d Duration
-	err := d.UnmarshalText([]byte("1s"))
-	if err != nil {
+	if err := d.UnmarshalText([]byte("1s")); err != nil {
 		t.Fatalf("TestShrink: d.UnmarshalText failed: %v", err)
 	}
 	c := context.Background()
@@ -25,8 +24,7 @@ func TestShrink(t *testing.T) {
 
 func TestShrinkWithTimeout(t *testing.T) {
 	var d Duration
-	err := d.UnmarshalText([]byte("1s"))
-	if err != nil {
+	if err := d.UnmarshalText([]byte("1s")); err != nil {
 		t.Fatalf("TestShrink:  d.UnmarshalText failed: %v", err)
 	}
 	c, cancel := context.WithTimeout(context.Background(), time.Second*2)
@@ -43,8 +41,7 @@ func TestShrinkWithTimeout(t *testing.T) {
 
 func TestShrinkWithDeadline(t *testing.T) {
 	var d Duration
-	err := d.UnmarshalText([]byte("1s"))
-	if err != nil {
+	if err := d.UnmarshalText([]byte("1s")); err != nil {
 		t.Fatalf("TestShrink:  d.UnmarshalText failed: %v", err)
 	}
 	c, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)

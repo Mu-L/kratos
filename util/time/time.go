@@ -7,20 +7,22 @@ import (
 	"time"
 )
 
-// Time be used to MySql timestamp converting.
+// Time be used to mysql timestamp converting.
 type Time int64
 
 // Scan scan time.
-func (t *Time) Scan(src interface{}) (err error) {
+func (t *Time) Scan(src interface{}) error {
 	switch sc := src.(type) {
 	case time.Time:
 		*t = Time(sc.Unix())
 	case string:
-		var i int64
-		i, err = strconv.ParseInt(sc, 10, 64)
+		i, err := strconv.ParseInt(sc, 10, 64)
+		if err != nil {
+			return err
+		}
 		*t = Time(i)
 	}
-	return
+	return nil
 }
 
 // Value get time value.
@@ -39,19 +41,19 @@ type Duration time.Duration
 // UnmarshalText unmarshal text to duration.
 func (d *Duration) UnmarshalText(text []byte) error {
 	tmp, err := time.ParseDuration(string(text))
-	if err == nil {
-		*d = Duration(tmp)
+	if err != nil {
+		return err
 	}
-	return err
+	*d = Duration(tmp)
+	return nil
 }
 
 // Shrink will decrease the duration by comparing with context's timeout duration
 // and return new timeout\context\CancelFunc.
 func (d Duration) Shrink(c context.Context) (Duration, context.Context, context.CancelFunc) {
 	if deadline, ok := c.Deadline(); ok {
-		if ctimeout := time.Until(deadline); ctimeout < time.Duration(d) {
-			// deliver small timeout
-			return Duration(ctimeout), c, func() {}
+		if timeout := time.Until(deadline); timeout < time.Duration(d) {
+			return Duration(timeout), c, func() {}
 		}
 	}
 	ctx, cancel := context.WithTimeout(c, time.Duration(d))
