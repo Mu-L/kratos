@@ -74,8 +74,8 @@ func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.Clien
 	options := clientOptions{
 		timeout: 500 * time.Millisecond,
 		middleware: middleware.Chain(
-			status.Client(),
 			recovery.Recovery(),
+			status.Client(),
 		),
 	}
 	for _, o := range opts {

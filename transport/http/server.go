@@ -72,20 +72,6 @@ func Middleware(m middleware.Middleware) ServerOption {
 	}
 }
 
-// RequestDecoder with request decoder option.
-func RequestDecoder(fn DecodeRequestFunc) ServerOption {
-	return func(s *Server) {
-		s.requestDecoder = fn
-	}
-}
-
-// ResponseEncoder with response handler option.
-func ResponseEncoder(fn EncodeResponseFunc) ServerOption {
-	return func(s *Server) {
-		s.responseEncoder = fn
-	}
-}
-
 // ErrorEncoder with error handler option.
 func ErrorEncoder(fn EncodeErrorFunc) ServerOption {
 	return func(s *Server) {
@@ -114,9 +100,9 @@ func NewServer(opts ...ServerOption) *Server {
 		network:         "tcp",
 		address:         ":0",
 		timeout:         time.Second,
-		requestDecoder:  DefaultRequestDecoder,
-		responseEncoder: DefaultResponseEncoder,
-		errorEncoder:    DefaultErrorEncoder,
+		requestDecoder:  defaultRequestDecoder,
+		responseEncoder: defaultResponseEncoder,
+		errorEncoder:    defaultErrorEncoder,
 		middleware:      recovery.Recovery(),
 		log:             log.NewHelper(loggerName, log.DefaultLogger),
 	}

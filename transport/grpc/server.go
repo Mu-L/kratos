@@ -85,8 +85,8 @@ func NewServer(opts ...ServerOption) *Server {
 		timeout: time.Second,
 		log:     log.NewHelper(loggerName, log.DefaultLogger),
 		middleware: middleware.Chain(
-			status.Server(),
 			recovery.Recovery(),
+			status.Server(),
 		),
 	}
 	for _, o := range opts {

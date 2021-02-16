@@ -2,9 +2,11 @@ package http
 
 import (
 	"context"
+	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
 )
 
@@ -93,7 +95,7 @@ func CheckResponse(res *http.Response) error {
 		return nil
 	}
 	se := &errors.StatusError{}
-	if err := DefaultResponseDecoder(res, se); err != nil {
+	if err := DecodeResponse(res, se); err != nil {
 		return err
 	}
 	return se
@@ -101,5 +103,15 @@ func CheckResponse(res *http.Response) error {
 
 // DecodeResponse decodes the body of res into target. If there is no body, target is unchanged.
 func DecodeResponse(res *http.Response, v interface{}) error {
-	return DefaultResponseDecoder(res, v)
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	subtype := contentSubtype(res.Header.Get("content-type"))
+	codec := encoding.GetCodec(subtype)
+	if codec == nil {
+		codec = encoding.GetCodec("json")
+	}
+	return codec.Unmarshal(data, v)
 }

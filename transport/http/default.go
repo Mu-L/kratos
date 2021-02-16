@@ -1,79 +1,75 @@
 package http
 
 import (
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
-	"github.com/go-kratos/kratos/v2/transport/http/json"
-	"github.com/go-kratos/kratos/v2/transport/http/proto"
+	"github.com/go-kratos/kratos/v2/encoding"
 )
 
-var (
-	// DefaultRequestDecoders is default request encoders.
-	DefaultRequestDecoders = map[string]DecodeRequestFunc{
-		"application/json":  json.DecodeRequest,
-		"application/proto": proto.DecodeRequest,
-	}
-	// DefaultResponseEncoders is default response encoders.
-	DefaultResponseEncoders = map[string]EncodeResponseFunc{
-		"application/json":  json.EncodeResponse,
-		"application/proto": proto.EncodeResponse,
-	}
-	// DefaultResponseDecoders is default response decoders.
-	DefaultResponseDecoders = map[string]DecodeResponseFunc{
-		"application/json":  json.DecodeResponse,
-		"application/proto": proto.DecodeResponse,
-	}
-)
+const baseContentType = "application"
 
-func stripContentType(contentType string) string {
-	idx := strings.Index(contentType, ";")
-	if idx != -1 {
-		contentType = contentType[:idx]
+func contentSubtype(contentType string) string {
+	if contentType == baseContentType {
+		return ""
 	}
-	return contentType
+	if !strings.HasPrefix(contentType, baseContentType) {
+		return ""
+	}
+	// guaranteed since != baseContentType and has baseContentType prefix
+	switch contentType[len(baseContentType)] {
+	case '/', ';':
+		// this will return true for "application/grpc+" or "application/grpc;"
+		// which the previous validContentType function tested to be valid, so we
+		// just say that no content-subtype is specified in this case
+		return contentType[len(baseContentType)+1:]
+	default:
+		return ""
+	}
 }
 
-// DefaultResponseDecoder is default response decoders.
-func DefaultResponseDecoder(res *http.Response, v interface{}) error {
-	contentType := stripContentType(res.Header.Get("content-type"))
-	decode, ok := DefaultResponseDecoders[contentType]
-	if ok {
-		return decode(res, v)
+func defaultRequestDecoder(req *http.Request, v interface{}) error {
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return err
 	}
-	return json.DecodeResponse(res, v)
-
+	defer req.Body.Close()
+	subtype := contentSubtype(req.Header.Get("content-type"))
+	codec := encoding.GetCodec(subtype)
+	if codec == nil {
+		return fmt.Errorf("unknown content-type error: %s", subtype)
+	}
+	return codec.Unmarshal(data, v)
 }
 
-// DefaultRequestDecoder is default request decoder.
-func DefaultRequestDecoder(req *http.Request, v interface{}) error {
-	contentType := stripContentType(req.Header.Get("content-type"))
-	decode, ok := DefaultRequestDecoders[contentType]
-	if ok {
-		return decode(req, v)
+func defaultResponseEncoder(res http.ResponseWriter, req *http.Request, v interface{}) error {
+	subtype := contentSubtype(req.Header.Get("accept"))
+	codec := encoding.GetCodec(subtype)
+	if codec == nil {
+		codec = encoding.GetCodec("json")
 	}
-	return json.DecodeRequest(req, v)
+	data, err := codec.Marshal(v)
+	if err != nil {
+		return err
+	}
+	res.Write(data)
+	return nil
 }
 
-// DefaultResponseEncoder is default response encoder.
-func DefaultResponseEncoder(res http.ResponseWriter, req *http.Request, v interface{}) error {
-	contentType := stripContentType(req.Header.Get("accept"))
-	encode, ok := DefaultResponseEncoders[contentType]
-	if ok {
-		return encode(res, req, v)
-	}
-	return json.EncodeResponse(res, req, v)
-}
-
-// DefaultErrorEncoder is default errors encoder.
-func DefaultErrorEncoder(res http.ResponseWriter, req *http.Request, err error) {
+func defaultErrorEncoder(res http.ResponseWriter, req *http.Request, err error) {
 	code, se := StatusError(err)
-	res.WriteHeader(code)
-	encode, ok := DefaultResponseEncoders[stripContentType(req.Header.Get("accept"))]
-	if !ok {
-		encode = json.EncodeResponse
+	subtype := contentSubtype(req.Header.Get("accept"))
+	codec := encoding.GetCodec(subtype)
+	if codec == nil {
+		codec = encoding.GetCodec("json")
 	}
-	if err := encode(res, req, se); err != nil {
+	data, err := codec.Marshal(se)
+	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
+		return
 	}
+	res.WriteHeader(code)
+	res.Write(data)
 }
