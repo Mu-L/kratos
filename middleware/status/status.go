@@ -106,7 +106,7 @@ func decode(err error) error {
 		case *errdetails.ErrorInfo:
 			se.Reason = d.Reason
 			se.Message = d.Metadata["message"]
-			break
+			return se
 		}
 	}
 	return se

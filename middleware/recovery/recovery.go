@@ -2,10 +2,10 @@ package recovery
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 
 	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
@@ -28,12 +28,13 @@ func Handler(h HandlerFunc) Option {
 
 // Recovery is a server middleware that recovers from any panics.
 func Recovery(opts ...Option) middleware.Middleware {
+	logger := log.NewHelper("middleware/recovery", log.DefaultLogger)
 	options := options{
 		handler: func(ctx context.Context, req, err interface{}) error {
 			buf := make([]byte, 64<<10)
 			n := runtime.Stack(buf, false)
 			buf = buf[:n]
-			fmt.Printf("%v: %+v\n%s\n", err, req, buf)
+			logger.Errorf("%v: %+v\n%s\n", err, req, buf)
 			return errors.Unknown("Unknown", "panic triggered: %v", err)
 		},
 	}
