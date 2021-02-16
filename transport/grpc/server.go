@@ -16,7 +16,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-var logger = log.NewHelper(log.GetLogger("transport/grpc"))
+const loggerName = "transport/grpc"
+
 var _ transport.Server = (*Server)(nil)
 
 // ServerOption is gRPC server option.
@@ -43,6 +44,13 @@ func Timeout(timeout time.Duration) ServerOption {
 	}
 }
 
+// Logger with server logger.
+func Logger(logger log.Logger) ServerOption {
+	return func(s *Server) {
+		s.log = log.NewHelper(loggerName, logger)
+	}
+}
+
 // Middleware with server middleware.
 func Middleware(m middleware.Middleware) ServerOption {
 	return func(s *Server) {
@@ -64,6 +72,7 @@ type Server struct {
 	network    string
 	address    string
 	timeout    time.Duration
+	log        *log.Helper
 	middleware middleware.Middleware
 	grpcOpts   []grpc.ServerOption
 }
@@ -74,6 +83,7 @@ func NewServer(opts ...ServerOption) *Server {
 		network: "tcp",
 		address: ":0",
 		timeout: time.Second,
+		log:     log.NewHelper(loggerName, log.DefaultLogger),
 		middleware: middleware.Chain(
 			status.Server(),
 			recovery.Recovery(),
@@ -113,14 +123,14 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.lis = lis
-	logger.Infof("[gRPC] server listening on: %s", lis.Addr().String())
+	s.log.Infof("[gRPC] server listening on: %s", lis.Addr().String())
 	return s.Serve(lis)
 }
 
 // Stop stop the gRPC server.
 func (s *Server) Stop() error {
 	s.GracefulStop()
-	logger.Info("[gRPC] server stopping")
+	s.log.Info("[gRPC] server stopping")
 	return nil
 }
 

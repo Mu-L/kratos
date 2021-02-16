@@ -10,18 +10,17 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
-var logger = log.NewHelper(log.GetLogger("grpc/resolver/discovery"))
-
 type discoveryResolver struct {
-	w  registry.Watcher
-	cc resolver.ClientConn
+	w   registry.Watcher
+	cc  resolver.ClientConn
+	log *log.Helper
 }
 
 func (r *discoveryResolver) watch() {
 	for {
 		ins, err := r.w.Next()
 		if err != nil {
-			logger.Errorf("Failed to watch discovery endpoint: %v", err)
+			r.log.Errorf("Failed to watch discovery endpoint: %v", err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -34,7 +33,7 @@ func (r *discoveryResolver) update(ins []*registry.ServiceInstance) {
 	for _, in := range ins {
 		endpoint, err := parseEndpoint(in.Endpoints)
 		if err != nil {
-			logger.Errorf("Failed to parse discovery endpoint: %v", err)
+			r.log.Errorf("Failed to parse discovery endpoint: %v", err)
 			continue
 		}
 		addr := resolver.Address{

@@ -16,15 +16,22 @@ type options struct {
 	logger log.Logger
 }
 
+// WithLogger with middleware logger.
+func WithLogger(logger log.Logger) Option {
+	return func(o *options) {
+		o.logger = logger
+	}
+}
+
 // Server is an HTTP logging middleware.
 func Server(opts ...Option) middleware.Middleware {
 	options := options{
-		logger: log.GetLogger("logging/http"),
+		logger: log.DefaultLogger,
 	}
 	for _, o := range opts {
 		o(&options)
 	}
-	log := log.NewHelper(options.logger)
+	log := log.NewHelper("logging/http", options.logger)
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (

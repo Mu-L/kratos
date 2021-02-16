@@ -1,18 +1,9 @@
 package log
 
 var (
-	defaultLogger Logger = NewStdLogger()
+	// DefaultLogger is default logger.
+	DefaultLogger Logger = NewStdLogger()
 )
-
-// GetLogger returns default logger.
-func GetLogger(name string) Logger {
-	return With(defaultLogger, "module", name)
-}
-
-// SetLogger set a default logger.
-func SetLogger(logger Logger) {
-	defaultLogger = logger
-}
 
 // Logger is a logger interface.
 type Logger interface {

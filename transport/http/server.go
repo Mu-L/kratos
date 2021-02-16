@@ -16,10 +16,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// SupportPackageIsVersion1 These constants should not be referenced from any other code.
-const SupportPackageIsVersion1 = true
+const (
+	// SupportPackageIsVersion1 These constants should not be referenced from any other code.
+	SupportPackageIsVersion1 = true
 
-var logger = log.NewHelper(log.GetLogger("transport/http"))
+	loggerName = "transport/http"
+)
+
 var _ transport.Server = (*Server)(nil)
 
 // DecodeRequestFunc deocder request func.
@@ -52,6 +55,13 @@ func Address(addr string) ServerOption {
 func Timeout(timeout time.Duration) ServerOption {
 	return func(s *Server) {
 		s.timeout = timeout
+	}
+}
+
+// Logger with server logger.
+func Logger(logger log.Logger) ServerOption {
+	return func(s *Server) {
+		s.log = log.NewHelper(loggerName, logger)
 	}
 }
 
@@ -95,6 +105,7 @@ type Server struct {
 	responseEncoder EncodeResponseFunc
 	errorEncoder    EncodeErrorFunc
 	router          *mux.Router
+	log             *log.Helper
 }
 
 // NewServer creates a HTTP server by options.
@@ -107,6 +118,7 @@ func NewServer(opts ...ServerOption) *Server {
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
 		middleware:      recovery.Recovery(),
+		log:             log.NewHelper(loggerName, log.DefaultLogger),
 	}
 	for _, o := range opts {
 		o(srv)
@@ -158,12 +170,12 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.lis = lis
-	logger.Infof("[HTTP] server listening on: %s", lis.Addr().String())
+	s.log.Infof("[HTTP] server listening on: %s", lis.Addr().String())
 	return s.Serve(lis)
 }
 
 // Stop stop the HTTP server.
 func (s *Server) Stop() error {
-	logger.Info("[HTTP] server stopping")
+	s.log.Info("[HTTP] server stopping")
 	return s.Shutdown(context.Background())
 }
