@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-kratos/kratos/v2/internal/host"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport"
@@ -20,6 +19,7 @@ import (
 // SupportPackageIsVersion1 These constants should not be referenced from any other code.
 const SupportPackageIsVersion1 = true
 
+var logger = log.NewHelper(log.GetLogger("transport/http"))
 var _ transport.Server = (*Server)(nil)
 
 // DecodeRequestFunc deocder request func.
@@ -83,13 +83,6 @@ func ErrorEncoder(fn EncodeErrorFunc) ServerOption {
 	}
 }
 
-// Logger with server logger.
-func Logger(logger log.Logger) ServerOption {
-	return func(s *Server) {
-		s.log = log.NewHelper("http", logger)
-	}
-}
-
 // Server is a HTTP server wrapper.
 type Server struct {
 	*http.Server
@@ -102,7 +95,6 @@ type Server struct {
 	responseEncoder EncodeResponseFunc
 	errorEncoder    EncodeErrorFunc
 	router          *mux.Router
-	log             *log.Helper
 }
 
 // NewServer creates a HTTP server by options.
@@ -115,7 +107,6 @@ func NewServer(opts ...ServerOption) *Server {
 		responseEncoder: DefaultResponseEncoder,
 		errorEncoder:    DefaultErrorEncoder,
 		middleware:      recovery.Recovery(),
-		log:             log.NewHelper("http", stdlog.NewLogger()),
 	}
 	for _, o := range opts {
 		o(srv)
@@ -156,13 +147,13 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.lis = lis
-	s.log.Infof("[HTTP] server listening on: %s", lis.Addr().String())
+	logger.Infof("[HTTP] server listening on: %s", lis.Addr().String())
 	return s.Serve(lis)
 }
 
 // Stop stop the HTTP server.
 func (s *Server) Stop() error {
-	s.log.Info("[HTTP] server stopping")
+	logger.Info("[HTTP] server stopping")
 	return s.Shutdown(context.Background())
 }
 

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/log/stdlog"
 )
 
 var (
@@ -18,6 +17,8 @@ var (
 	ErrTypeAssert = errors.New("type assert error")
 
 	_ Config = (*config)(nil)
+
+	logger = log.NewHelper(log.GetLogger("kratos/config"))
 )
 
 // Observer is config observer.
@@ -38,13 +39,11 @@ type config struct {
 	cached    sync.Map
 	observers sync.Map
 	watchers  []Watcher
-	log       *log.Helper
 }
 
 // New new a config with options.
 func New(opts ...Option) Config {
 	options := options{
-		logger: stdlog.NewLogger(),
 		decoder: func(kv *KeyValue, v map[string]interface{}) error {
 			return json.Unmarshal(kv.Value, &v)
 		},
@@ -55,7 +54,6 @@ func New(opts ...Option) Config {
 	return &config{
 		opts:   options,
 		reader: newReader(options),
-		log:    log.NewHelper("config", options.logger),
 	}
 }
 
@@ -64,11 +62,11 @@ func (c *config) watch(w Watcher) {
 		kvs, err := w.Next()
 		if err != nil {
 			time.Sleep(time.Second)
-			c.log.Errorf("Failed to watch next config: %v", err)
+			logger.Errorf("Failed to watch next config: %v", err)
 			continue
 		}
 		if err := c.reader.Merge(kvs...); err != nil {
-			c.log.Errorf("Failed to merge next config: %v", err)
+			logger.Errorf("Failed to merge next config: %v", err)
 			continue
 		}
 		c.cached.Range(func(key, value interface{}) bool {
@@ -92,12 +90,12 @@ func (c *config) Load() error {
 			return err
 		}
 		if err := c.reader.Merge(kvs...); err != nil {
-			c.log.Errorf("Failed to merge config source: %v", err)
+			logger.Errorf("Failed to merge config source: %v", err)
 			return err
 		}
 		w, err := src.Watch()
 		if err != nil {
-			c.log.Errorf("Failed to watch config source: %v", err)
+			logger.Errorf("Failed to watch config source: %v", err)
 			return err
 		}
 		go c.watch(w)

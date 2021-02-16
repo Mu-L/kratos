@@ -8,14 +8,14 @@ import (
 	"syscall"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"golang.org/x/sync/errgroup"
 )
+
+var logger = log.NewHelper(log.GetLogger("kratos"))
 
 // App is an application components lifecycle manager
 type App struct {
 	opts   options
-	log    *log.Helper
 	ctx    context.Context
 	cancel func()
 }
@@ -23,9 +23,8 @@ type App struct {
 // New create an application lifecycle manager.
 func New(opts ...Option) *App {
 	options := options{
-		logger: stdlog.NewLogger(),
-		ctx:    context.Background(),
-		sigs:   []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
+		ctx:  context.Background(),
+		sigs: []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
 	}
 	for _, o := range opts {
 		o(&options)
@@ -35,7 +34,6 @@ func New(opts ...Option) *App {
 		ctx:    ctx,
 		cancel: cancel,
 		opts:   options,
-		log:    log.NewHelper("app", options.logger),
 	}
 }
 

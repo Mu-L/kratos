@@ -6,38 +6,41 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/registry"
+	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/resolver"
 )
 
+var logger = log.NewHelper(log.GetLogger("grpc/resolver/discovery"))
+
 type discoveryResolver struct {
-	w   registry.Watcher
-	cc  resolver.ClientConn
-	log *log.Helper
+	w  registry.Watcher
+	cc resolver.ClientConn
 }
 
 func (r *discoveryResolver) watch() {
 	for {
-		updated, err := r.w.Next()
+		ins, err := r.w.Next()
 		if err != nil {
-			r.log.Errorf("Failed to watch discovery endpoint: %v", err)
+			logger.Errorf("Failed to watch discovery endpoint: %v", err)
 			time.Sleep(time.Second)
 			continue
 		}
-		r.update(updated)
+		r.update(ins)
 	}
 }
 
-func (r *discoveryResolver) update(updated []*registry.ServiceInstance) {
+func (r *discoveryResolver) update(ins []*registry.ServiceInstance) {
 	var addrs []resolver.Address
-	for _, up := range updated {
-		endpoint, err := parseEndpoint(up.Endpoints)
+	for _, in := range ins {
+		endpoint, err := parseEndpoint(in.Endpoints)
 		if err != nil {
-			r.log.Errorf("Failed to parse discovery endpoint: %v", err)
+			logger.Errorf("Failed to parse discovery endpoint: %v", err)
 			continue
 		}
 		addr := resolver.Address{
-			Addr:     endpoint,
-			Metadata: up.Metadata,
+			ServerName: in.Name,
+			Attributes: parseAttributes(in.Metadata),
+			Addr:       endpoint,
 		}
 		addrs = append(addrs, addr)
 	}
@@ -57,8 +60,16 @@ func parseEndpoint(endpoints []string) (string, error) {
 			return "", err
 		}
 		if u.Scheme == "grpc" {
-			return u.Path, nil
+			return u.Host, nil
 		}
 	}
 	return "", nil
+}
+
+func parseAttributes(md map[string]string) *attributes.Attributes {
+	var pairs []interface{}
+	for k, v := range md {
+		pairs = append(pairs, k, v)
+	}
+	return attributes.New(pairs)
 }

@@ -8,14 +8,15 @@ import (
 
 	"github.com/go-kratos/kratos/v2/internal/host"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/log/stdlog"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
+	"github.com/go-kratos/kratos/v2/middleware/status"
 	"github.com/go-kratos/kratos/v2/transport"
 
 	"google.golang.org/grpc"
 )
 
+var logger = log.NewHelper(log.GetLogger("transport/grpc"))
 var _ transport.Server = (*Server)(nil)
 
 // ServerOption is gRPC server option.
@@ -49,13 +50,6 @@ func Middleware(m middleware.Middleware) ServerOption {
 	}
 }
 
-// Logger with server logger.
-func Logger(logger log.Logger) ServerOption {
-	return func(s *Server) {
-		s.log = log.NewHelper("grpc", logger)
-	}
-}
-
 // Options with grpc options.
 func Options(opts ...grpc.ServerOption) ServerOption {
 	return func(s *Server) {
@@ -72,17 +66,18 @@ type Server struct {
 	timeout    time.Duration
 	middleware middleware.Middleware
 	grpcOpts   []grpc.ServerOption
-	log        *log.Helper
 }
 
 // NewServer creates a gRPC server by options.
 func NewServer(opts ...ServerOption) *Server {
 	srv := &Server{
-		network:    "tcp",
-		address:    ":0",
-		timeout:    time.Second,
-		middleware: recovery.Recovery(),
-		log:        log.NewHelper("grpc", stdlog.NewLogger()),
+		network: "tcp",
+		address: ":0",
+		timeout: time.Second,
+		middleware: middleware.Chain(
+			status.Server(),
+			recovery.Recovery(),
+		),
 	}
 	for _, o := range opts {
 		o(srv)
@@ -118,14 +113,14 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.lis = lis
-	s.log.Infof("[gRPC] server listening on: %s", lis.Addr().String())
+	logger.Infof("[gRPC] server listening on: %s", lis.Addr().String())
 	return s.Serve(lis)
 }
 
 // Stop stop the gRPC server.
 func (s *Server) Stop() error {
 	s.GracefulStop()
-	s.log.Info("[gRPC] server stopping")
+	logger.Info("[gRPC] server stopping")
 	return nil
 }
 

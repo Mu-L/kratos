@@ -12,51 +12,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func encode(err error) error {
-	se, ok := errors.FromError(err)
-	if !ok {
-		se = &errors.StatusError{
-			Code: 2,
-		}
-	}
-	gs := status.Newf(codes.Code(se.Code), "%s: %s", se.Reason, se.Message)
-	details := []proto.Message{
-		&errdetails.ErrorInfo{
-			Reason:   se.Reason,
-			Metadata: map[string]string{"message": se.Message},
-		},
-	}
-	for _, any := range se.Details {
-		detail := &ptypes.DynamicAny{}
-		if err := ptypes.UnmarshalAny(any, detail); err != nil {
-			continue
-		}
-		details = append(details, detail.Message)
-	}
-	gs, err = gs.WithDetails(details...)
-	if err != nil {
-		return err
-	}
-	return gs.Err()
-}
-
-func decode(err error) error {
-	gs := status.Convert(err)
-	se := &errors.StatusError{
-		Code:    int32(gs.Code()),
-		Details: gs.Proto().Details,
-	}
-	for _, detail := range gs.Details() {
-		switch d := detail.(type) {
-		case *errdetails.ErrorInfo:
-			se.Reason = d.Reason
-			se.Message = d.Metadata["message"]
-			break
-		}
-	}
-	return se
-}
-
 // HandlerFunc is middleware error handler.
 type HandlerFunc func(error) error
 
@@ -110,4 +65,49 @@ func Client(opts ...Option) middleware.Middleware {
 			return reply, nil
 		}
 	}
+}
+
+func encode(err error) error {
+	se, ok := errors.FromError(err)
+	if !ok {
+		se = &errors.StatusError{
+			Code: 2,
+		}
+	}
+	gs := status.Newf(codes.Code(se.Code), "%s: %s", se.Reason, se.Message)
+	details := []proto.Message{
+		&errdetails.ErrorInfo{
+			Reason:   se.Reason,
+			Metadata: map[string]string{"message": se.Message},
+		},
+	}
+	for _, any := range se.Details {
+		detail := &ptypes.DynamicAny{}
+		if err := ptypes.UnmarshalAny(any, detail); err != nil {
+			continue
+		}
+		details = append(details, detail.Message)
+	}
+	gs, err = gs.WithDetails(details...)
+	if err != nil {
+		return err
+	}
+	return gs.Err()
+}
+
+func decode(err error) error {
+	gs := status.Convert(err)
+	se := &errors.StatusError{
+		Code:    int32(gs.Code()),
+		Details: gs.Proto().Details,
+	}
+	for _, detail := range gs.Details() {
+		switch d := detail.(type) {
+		case *errdetails.ErrorInfo:
+			se.Reason = d.Reason
+			se.Message = d.Metadata["message"]
+			break
+		}
+	}
+	return se
 }

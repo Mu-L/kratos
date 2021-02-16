@@ -15,8 +15,7 @@ type Helper struct {
 }
 
 // NewHelper new a logger helper.
-func NewHelper(name string, logger Logger) *Helper {
-	log := With(logger, "module", name)
+func NewHelper(log Logger) *Helper {
 	return &Helper{
 		debug: Debug(log),
 		info:  Info(log),

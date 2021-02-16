@@ -1,11 +1,9 @@
 package log
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestLogger(t *testing.T) {
-	logger := GetLogger("test")
+func TestFmtLogger(t *testing.T) {
+	logger := NewStdLogger()
 
 	Debug(logger).Print("log", "test debug")
 	Info(logger).Print("log", "test info")
