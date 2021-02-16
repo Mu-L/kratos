@@ -1,6 +1,9 @@
 package host
 
-import "testing"
+import (
+	"net"
+	"testing"
+)
 
 func TestPrivateIP(t *testing.T) {
 	tests := []struct {
@@ -37,7 +40,7 @@ func TestExtract(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.addr, func(t *testing.T) {
-			res, err := Extract(test.addr)
+			res, err := Extract(test.addr, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -45,5 +48,16 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("expected %s got %s", test.expect, res)
 			}
 		})
+	}
+}
+
+func TestPort(t *testing.T) {
+	lis, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port, ok := Port(lis)
+	if !ok || port == 0 {
+		t.Fatalf("expected: %s got %d", lis.Addr().String(), port)
 	}
 }

@@ -93,6 +93,7 @@ func Logger(logger log.Logger) ServerOption {
 // Server is a HTTP server wrapper.
 type Server struct {
 	*http.Server
+	lis             net.Listener
 	network         string
 	address         string
 	timeout         time.Duration
@@ -154,7 +155,8 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	s.log.Infof("[HTTP] server listening on: %s", s.address)
+	s.lis = lis
+	s.log.Infof("[HTTP] server listening on: %s", lis.Addr().String())
 	return s.Serve(lis)
 }
 
@@ -168,7 +170,7 @@ func (s *Server) Stop() error {
 // examples:
 //   http://127.0.0.1:8000?isSecure=false
 func (s *Server) Endpoint() (string, error) {
-	addr, err := host.Extract(s.address)
+	addr, err := host.Extract(s.address, s.lis)
 	if err != nil {
 		return "", err
 	}

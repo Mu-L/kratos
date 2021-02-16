@@ -38,6 +38,11 @@ func (t Time) Time() time.Time {
 // Duration be used toml unmarshal string time, like 1s, 500ms.
 type Duration time.Duration
 
+// Duration returns a time.Duration.
+func (d *Duration) Duration() time.Duration {
+	return time.Duration(*d)
+}
+
 // UnmarshalText unmarshal text to duration.
 func (d *Duration) UnmarshalText(text []byte) error {
 	tmp, err := time.ParseDuration(string(text))

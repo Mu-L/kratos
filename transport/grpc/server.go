@@ -66,6 +66,7 @@ func Options(opts ...grpc.ServerOption) ServerOption {
 // Server is a gRPC server wrapper.
 type Server struct {
 	*grpc.Server
+	lis        net.Listener
 	network    string
 	address    string
 	timeout    time.Duration
@@ -103,7 +104,7 @@ func NewServer(opts ...ServerOption) *Server {
 // examples:
 //   grpc://127.0.0.1:9000?isSecure=false
 func (s *Server) Endpoint() (string, error) {
-	addr, err := host.Extract(s.address)
+	addr, err := host.Extract(s.address, s.lis)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +117,8 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	s.log.Infof("[gRPC] server listening on: %s", s.address)
+	s.lis = lis
+	s.log.Infof("[gRPC] server listening on: %s", lis.Addr().String())
 	return s.Serve(lis)
 }
 

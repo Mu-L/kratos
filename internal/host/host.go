@@ -3,6 +3,7 @@ package host
 import (
 	"fmt"
 	"net"
+	"strconv"
 )
 
 var (
@@ -21,14 +22,27 @@ func isPrivateIP(addr string) bool {
 	return false
 }
 
+// Port return a real port.
+func Port(lis net.Listener) (int, bool) {
+	if addr, ok := lis.Addr().(*net.TCPAddr); ok {
+		return addr.Port, true
+	}
+	return 0, false
+}
+
 // Extract returns a private addr and port.
-func Extract(hostport string) (string, error) {
+func Extract(hostport string, lis net.Listener) (string, error) {
 	addr, port, err := net.SplitHostPort(hostport)
 	if err != nil {
 		return "", err
 	}
+	if lis != nil {
+		if p, ok := Port(lis); ok {
+			port = strconv.Itoa(p)
+		}
+	}
 	if len(addr) > 0 && (addr != "0.0.0.0" && addr != "[::]" && addr != "::") {
-		return hostport, nil
+		return net.JoinHostPort(addr, port), nil
 	}
 	ifaces, err := net.Interfaces()
 	if err != nil {
