@@ -45,6 +45,7 @@ func WithMiddleware(m middleware.Middleware) ClientOption {
 
 // Client is a HTTP transport client.
 type clientOptions struct {
+	ctx        context.Context
 	timeout    time.Duration
 	userAgent  string
 	transport  http.RoundTripper
@@ -63,6 +64,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*http.Client, error) 
 // NewTransport creates an http.RoundTripper.
 func NewTransport(ctx context.Context, opts ...ClientOption) (http.RoundTripper, error) {
 	options := &clientOptions{
+		ctx:       ctx,
 		timeout:   500 * time.Millisecond,
 		transport: http.DefaultTransport,
 	}

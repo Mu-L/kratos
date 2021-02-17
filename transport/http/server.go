@@ -111,7 +111,7 @@ func NewServer(opts ...ServerOption) *Server {
 
 // RouteGroup .
 func (s *Server) RouteGroup(prefix string) *RouteGroup {
-	return &RouteGroup{s.router.PathPrefix(prefix)}
+	return &RouteGroup{prefix: prefix, router: s.router}
 }
 
 // Handle registers a new route with a matcher for the URL path.
