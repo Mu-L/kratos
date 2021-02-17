@@ -1,13 +1,10 @@
 package config
 
-import "time"
-
 // KeyValue is config key value.
 type KeyValue struct {
-	Key       string
-	Value     []byte
-	Metadata  map[string]string
-	Timestamp time.Time
+	Key      string
+	Value    []byte
+	Metadata map[string]string
 }
 
 // Source is config source.

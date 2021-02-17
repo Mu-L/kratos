@@ -21,13 +21,18 @@ type App struct {
 	ctx      context.Context
 	cancel   func()
 	instance *registry.ServiceInstance
+	log      *log.Helper
 }
 
 // New create an application lifecycle manager.
 func New(opts ...Option) *App {
 	options := options{
-		ctx:  context.Background(),
-		sigs: []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
+		ctx:    context.Background(),
+		logger: log.DefaultLogger,
+		sigs:   []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
+	}
+	if id, err := uuid.NewUUID(); err == nil {
+		options.id = id.String()
 	}
 	for _, o := range opts {
 		o(&options)
@@ -38,6 +43,7 @@ func New(opts ...Option) *App {
 		ctx:      ctx,
 		cancel:   cancel,
 		instance: serviceInstance(options),
+		log:      log.NewHelper("app", options.logger),
 	}
 }
 
@@ -58,6 +64,11 @@ func (a *App) Registry() registry.Registry {
 
 // Run executes all OnStart hooks registered with the application's Lifecycle.
 func (a *App) Run() error {
+	a.log.Infow(
+		"service_id", a.opts.id,
+		"service_name", a.opts.name,
+		"version", a.opts.version,
+	)
 	g, ctx := errgroup.WithContext(a.ctx)
 	for _, srv := range a.opts.servers {
 		srv := srv
@@ -106,11 +117,6 @@ func (a *App) Stop() error {
 }
 
 func serviceInstance(o options) *registry.ServiceInstance {
-	if o.id == "" {
-		if id, err := uuid.NewUUID(); err == nil {
-			o.id = id.String()
-		}
-	}
 	if len(o.endpoints) == 0 {
 		for _, srv := range o.servers {
 			if e, err := srv.Endpoint(); err == nil {
