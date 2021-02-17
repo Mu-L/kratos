@@ -2,7 +2,7 @@ package grpc
 
 import "context"
 
-// ServerInfo is HTTP server infomation.
+// ServerInfo is gRPC server infomation.
 type ServerInfo struct {
 	// Server is the service implementation the user provides. This is read-only.
 	Server interface{}
@@ -12,13 +12,32 @@ type ServerInfo struct {
 
 type serverKey struct{}
 
-// NewContext returns a new Context that carries value.
-func NewContext(ctx context.Context, s ServerInfo) context.Context {
-	return context.WithValue(ctx, serverKey{}, s)
+// NewServerContext returns a new Context that carries value.
+func NewServerContext(ctx context.Context, info ServerInfo) context.Context {
+	return context.WithValue(ctx, serverKey{}, info)
 }
 
-// FromContext returns the Transport value stored in ctx, if any.
-func FromContext(ctx context.Context) (s ServerInfo, ok bool) {
-	s, ok = ctx.Value(serverKey{}).(ServerInfo)
+// FromServerContext returns the Transport value stored in ctx, if any.
+func FromServerContext(ctx context.Context) (info ServerInfo, ok bool) {
+	info, ok = ctx.Value(serverKey{}).(ServerInfo)
+	return
+}
+
+// ClientInfo is gRPC server infomation.
+type ClientInfo struct {
+	// FullMethod is the full RPC method string, i.e., /package.service/method.
+	FullMethod string
+}
+
+type clientKey struct{}
+
+// NewClientContext returns a new Context that carries value.
+func NewClientContext(ctx context.Context, info ClientInfo) context.Context {
+	return context.WithValue(ctx, serverKey{}, info)
+}
+
+// FromClientContext returns the Transport value stored in ctx, if any.
+func FromClientContext(ctx context.Context) (info ClientInfo, ok bool) {
+	info, ok = ctx.Value(serverKey{}).(ClientInfo)
 	return
 }

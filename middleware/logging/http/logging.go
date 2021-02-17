@@ -38,7 +38,7 @@ func Server(opts ...Option) middleware.Middleware {
 				path   string
 				method string
 			)
-			info, ok := http.FromContext(ctx)
+			info, ok := http.FromServerContext(ctx)
 			if ok {
 				path = info.Request.RequestURI
 				method = info.Request.Method

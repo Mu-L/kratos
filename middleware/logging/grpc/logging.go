@@ -40,7 +40,7 @@ func Server(opts ...Option) middleware.Middleware {
 				service    string
 				method     string
 			)
-			info, ok := grpc.FromContext(ctx)
+			info, ok := grpc.FromServerContext(ctx)
 			if ok {
 				fullMethod = info.FullMethod
 				service = path.Dir(info.FullMethod)[1:]

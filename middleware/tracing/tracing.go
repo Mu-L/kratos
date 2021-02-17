@@ -28,7 +28,9 @@ func WithTracer(tracer opentracing.Tracer) Option {
 
 // Server returns a new server middleware for OpenTracing.
 func Server(opts ...Option) middleware.Middleware {
-	options := options{}
+	options := options{
+		tracer: opentracing.GlobalTracer(),
+	}
 	for _, o := range opts {
 		o(&options)
 	}
@@ -39,16 +41,17 @@ func Server(opts ...Option) middleware.Middleware {
 				operation   string
 				spanContext opentracing.SpanContext
 			)
-			if info, ok := http.FromContext(ctx); ok {
-				component = "gRPC"
+			if info, ok := http.FromServerContext(ctx); ok {
+				// HTTP span
+				component = "HTTP"
 				operation = info.Request.RequestURI
 				spanContext, _ = options.tracer.Extract(
 					opentracing.HTTPHeaders,
 					opentracing.HTTPHeadersCarrier(info.Request.Header),
 				)
-			}
-			if info, ok := grpc.FromContext(ctx); ok {
-				component = "HTTP"
+			} else if info, ok := grpc.FromServerContext(ctx); ok {
+				// gRPC span
+				component = "gRPC"
 				operation = info.FullMethod
 				if md, ok := metadata.FromIncomingContext(ctx); ok {
 					spanContext, _ = options.tracer.Extract(
@@ -63,6 +66,55 @@ func Server(opts ...Option) middleware.Middleware {
 				opentracing.Tag{Key: string(ext.Component), Value: component},
 			)
 			defer span.Finish()
+			if reply, err = handler(ctx, req); err != nil {
+				ext.Error.Set(span, true)
+				span.LogFields(
+					log.String("event", "error"),
+					log.String("message", err.Error()),
+				)
+			}
+			return
+		}
+	}
+}
+
+// Client returns a new client middleware for OpenTracing.
+func Client(opts ...Option) middleware.Middleware {
+	options := options{}
+	for _, o := range opts {
+		o(&options)
+	}
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
+			var (
+				operation string
+				parent    opentracing.SpanContext
+				carrier   opentracing.HTTPHeadersCarrier
+			)
+			if span := opentracing.SpanFromContext(ctx); span != nil {
+				parent = span.Context()
+			}
+			if info, ok := http.FromClientContext(ctx); ok {
+				// HTTP span
+				operation = info.Request.RequestURI
+				carrier = opentracing.HTTPHeadersCarrier(info.Request.Header)
+			} else if info, ok := grpc.FromClientContext(ctx); ok {
+				// gRPC span
+				operation = info.FullMethod
+				if md, ok := metadata.FromOutgoingContext(ctx); ok {
+					carrier = opentracing.HTTPHeadersCarrier(md)
+					ctx = metadata.NewOutgoingContext(ctx, md)
+				}
+			}
+			span := options.tracer.StartSpan(
+				operation,
+				opentracing.ChildOf(parent),
+				ext.SpanKindRPCClient,
+			)
+			defer span.Finish()
+			options.tracer.Inject(span.Context(), opentracing.HTTPHeaders, carrier)
+			ctx = opentracing.ContextWithSpan(ctx, span)
+			// send handler
 			if reply, err = handler(ctx, req); err != nil {
 				ext.Error.Set(span, true)
 				span.LogFields(

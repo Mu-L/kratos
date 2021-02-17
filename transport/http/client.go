@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/transport"
 )
 
 // ClientOption is HTTP client option.
@@ -34,11 +36,19 @@ func WithTransport(trans http.RoundTripper) ClientOption {
 	}
 }
 
+// WithMiddleware with client middleware.
+func WithMiddleware(m middleware.Middleware) ClientOption {
+	return func(o *clientOptions) {
+		o.middleware = m
+	}
+}
+
 // Client is a HTTP transport client.
 type clientOptions struct {
-	timeout   time.Duration
-	userAgent string
-	transport http.RoundTripper
+	timeout    time.Duration
+	userAgent  string
+	transport  http.RoundTripper
+	middleware middleware.Middleware
 }
 
 // NewClient returns an HTTP client.
@@ -60,46 +70,49 @@ func NewTransport(ctx context.Context, opts ...ClientOption) (http.RoundTripper,
 		o(options)
 	}
 	return &baseTransport{
-		userAgent: options.userAgent,
-		timeout:   options.timeout,
-		base:      options.transport,
+		middleware: options.middleware,
+		userAgent:  options.userAgent,
+		timeout:    options.timeout,
+		base:       options.transport,
 	}, nil
 }
 
 type baseTransport struct {
-	userAgent string
-	timeout   time.Duration
-	base      http.RoundTripper
+	userAgent  string
+	timeout    time.Duration
+	base       http.RoundTripper
+	middleware middleware.Middleware
 }
 
 func (t *baseTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.userAgent != "" && req.Header.Get("User-Agent") == "" {
 		req.Header.Set("User-Agent", t.userAgent)
 	}
-	ctx, cancel := context.WithTimeout(req.Context(), t.timeout)
+	ctx := transport.NewContext(req.Context(), transport.Transport{Kind: "HTTP"})
+	ctx = NewClientContext(ctx, ClientInfo{Request: req})
+	ctx, cancel := context.WithTimeout(ctx, t.timeout)
 	defer cancel()
-	res, err := t.base.RoundTrip(req.WithContext(ctx))
+
+	h := func(ctx context.Context, in interface{}) (interface{}, error) {
+		return t.base.RoundTrip(req)
+	}
+	if t.middleware != nil {
+		h = t.middleware(h)
+	}
+	res, err := h(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	return res.(*http.Response), nil
 }
 
-// CheckResponse returns an error (of type *Error) if the response
-// status code is not 2xx.
-func CheckResponse(res *http.Response) error {
-	if res.StatusCode >= 200 && res.StatusCode <= 299 {
-		return nil
-	}
-	se := &errors.StatusError{}
-	if err := DecodeResponse(res, se); err != nil {
+// Do send an HTTP request and decodes the body of response into target.
+// returns an error (of type *Error) if the response status code is not 2xx.
+func Do(client *http.Client, req *http.Request, target interface{}) error {
+	res, err := client.Do(req)
+	if err != nil {
 		return err
 	}
-	return se
-}
-
-// DecodeResponse decodes the body of res into target. If there is no body, target is unchanged.
-func DecodeResponse(res *http.Response, v interface{}) error {
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
@@ -110,5 +123,12 @@ func DecodeResponse(res *http.Response, v interface{}) error {
 	if codec == nil {
 		codec = encoding.GetCodec("json")
 	}
-	return codec.Unmarshal(data, v)
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		se := &errors.StatusError{}
+		if err := codec.Unmarshal(data, se); err != nil {
+			return err
+		}
+		return se
+	}
+	return codec.Unmarshal(data, target)
 }
