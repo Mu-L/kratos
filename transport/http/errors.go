@@ -42,8 +42,8 @@ var (
 	}
 )
 
-// StatusError converts error to http error.
-func StatusError(err error) (int, *errors.StatusError) {
+// StatusError converts error to status error.
+func StatusError(err error) (*errors.StatusError, int) {
 	se, ok := errors.FromError(err)
 	if !ok {
 		se = &errors.StatusError{
@@ -53,7 +53,7 @@ func StatusError(err error) (int, *errors.StatusError) {
 		}
 	}
 	if status, ok := codesMapping[se.Code]; ok {
-		return status, se
+		return se, status
 	}
-	return http.StatusInternalServerError, se
+	return se, http.StatusInternalServerError
 }

@@ -11,6 +11,10 @@ import (
 
 const baseContentType = "application"
 
+func contentType(subtype string) string {
+	return strings.Join([]string{baseContentType, subtype}, "/")
+}
+
 func contentSubtype(contentType string) string {
 	if contentType == baseContentType {
 		return ""
@@ -39,7 +43,7 @@ func defaultRequestDecoder(req *http.Request, v interface{}) error {
 	subtype := contentSubtype(req.Header.Get("content-type"))
 	codec := encoding.GetCodec(subtype)
 	if codec == nil {
-		return fmt.Errorf("unknown content-type error: %s", subtype)
+		return fmt.Errorf("decoding request failed unknown content-type: %s", subtype)
 	}
 	return codec.Unmarshal(data, v)
 }
@@ -54,12 +58,13 @@ func defaultResponseEncoder(res http.ResponseWriter, req *http.Request, v interf
 	if err != nil {
 		return err
 	}
+	res.Header().Set("content-type", contentType(codec.Name()))
 	res.Write(data)
 	return nil
 }
 
 func defaultErrorEncoder(res http.ResponseWriter, req *http.Request, err error) {
-	code, se := StatusError(err)
+	se, code := StatusError(err)
 	subtype := contentSubtype(req.Header.Get("accept"))
 	codec := encoding.GetCodec(subtype)
 	if codec == nil {
@@ -70,6 +75,7 @@ func defaultErrorEncoder(res http.ResponseWriter, req *http.Request, err error) 
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	res.Header().Set("content-type", contentType(codec.Name()))
 	res.WriteHeader(code)
 	res.Write(data)
 }

@@ -28,7 +28,7 @@ func BindVars(req *http.Request, msg proto.Message) error {
 	return nil
 }
 
-// BindForm parses query parameters.
+// BindForm parses form parameters.
 func BindForm(req *http.Request, msg proto.Message) error {
 	if err := req.ParseForm(); err != nil {
 		return err

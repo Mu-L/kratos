@@ -7,6 +7,9 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
+// SupportPackageIsVersion1 These constants should not be referenced from any other code.
+const SupportPackageIsVersion1 = true
+
 type methodHandler func(srv interface{}, ctx context.Context, req *http.Request, dec func(interface{}) error, m middleware.Middleware) (out interface{}, err error)
 
 // MethodDesc represents a Proto service's method specification.

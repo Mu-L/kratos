@@ -2,48 +2,53 @@ package http
 
 import (
 	"net/http"
-	"path"
 
 	"github.com/gorilla/mux"
 )
 
-// RouteGroup .
+// RouteGroup adds a matcher for the URL path and method. This matches if the given
+// template is a prefix of the full URL path. See route.Path() for details on
+// the tpl argument.
 type RouteGroup struct {
-	root   string
-	router *mux.Router
+	route *mux.Route
 }
 
-// GET .
-func (r *RouteGroup) GET(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("GET")
+// ANY maps an HTTP Any request to the path and the specified handler.
+func (r *RouteGroup) ANY(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler)
 }
 
-// HEAD .
-func (r *RouteGroup) HEAD(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("HEAD")
+// GET maps an HTTP Get request to the path and the specified handler.
+func (r *RouteGroup) GET(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("GET")
 }
 
-// POST .
-func (r *RouteGroup) POST(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("POST")
+// HEAD maps an HTTP Head request to the path and the specified handler.
+func (r *RouteGroup) HEAD(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("HEAD")
 }
 
-// PUT .
-func (r *RouteGroup) PUT(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("PUT")
+// POST maps an HTTP Post request to the path and the specified handler.
+func (r *RouteGroup) POST(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("POST")
 }
 
-// DELETE .
-func (r *RouteGroup) DELETE(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("DELETE")
+// PUT maps an HTTP Put request to the path and the specified handler.
+func (r *RouteGroup) PUT(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("PUT")
 }
 
-// PATCH .
-func (r *RouteGroup) PATCH(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("PATCH")
+// DELETE maps an HTTP Delete request to the path and the specified handler.
+func (r *RouteGroup) DELETE(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("DELETE")
 }
 
-// OPTIONS .
-func (r *RouteGroup) OPTIONS(p string, h http.HandlerFunc) {
-	r.router.HandleFunc(path.Join(r.root, p), h).Methods("OPTIONS")
+// PATCH maps an HTTP Patch request to the path and the specified handler.
+func (r *RouteGroup) PATCH(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("PATCH")
+}
+
+// OPTIONS maps an HTTP Options request to the path and the specified handler.
+func (r *RouteGroup) OPTIONS(path string, handler http.HandlerFunc) {
+	r.route.Path(path).HandlerFunc(handler).Methods("OPTIONS")
 }

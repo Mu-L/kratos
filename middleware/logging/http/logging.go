@@ -31,7 +31,7 @@ func Server(opts ...Option) middleware.Middleware {
 	for _, o := range opts {
 		o(&options)
 	}
-	log := log.NewHelper("logging/http", options.logger)
+	log := log.NewHelper("middleware/http", options.logger)
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (

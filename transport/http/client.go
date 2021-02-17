@@ -10,9 +10,6 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 )
 
-// DecodeResponseFunc decode response func.
-type DecodeResponseFunc func(res *http.Response, v interface{}) error
-
 // ClientOption is HTTP client option.
 type ClientOption func(*clientOptions)
 

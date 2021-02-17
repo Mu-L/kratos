@@ -16,12 +16,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	// SupportPackageIsVersion1 These constants should not be referenced from any other code.
-	SupportPackageIsVersion1 = true
-
-	loggerName = "transport/http"
-)
+const loggerName = "transport/http"
 
 var _ transport.Server = (*Server)(nil)
 
@@ -115,8 +110,8 @@ func NewServer(opts ...ServerOption) *Server {
 }
 
 // RouteGroup .
-func (s *Server) RouteGroup(path string) *RouteGroup {
-	return &RouteGroup{root: path, router: s.router}
+func (s *Server) RouteGroup(prefix string) *RouteGroup {
+	return &RouteGroup{s.router.PathPrefix(prefix)}
 }
 
 // Handle registers a new route with a matcher for the URL path.

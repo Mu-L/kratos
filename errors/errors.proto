@@ -8,7 +8,7 @@ option cc_enable_arenas = true;
 option go_package = "github.com/go-kratos/kratos/v2/errors;errors";
 option java_multiple_files = true;
 option java_outer_classname = "ErrorsProto";
-option java_package = "dev.kratos.errors";
+option java_package = "com.github.kratos.errors";
 option objc_class_prefix = "KratosErrors";
 
 message Status {

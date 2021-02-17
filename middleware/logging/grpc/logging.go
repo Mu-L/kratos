@@ -32,15 +32,17 @@ func Server(opts ...Option) middleware.Middleware {
 	for _, o := range opts {
 		o(&options)
 	}
-	log := log.NewHelper("logging/grpc", options.logger)
+	log := log.NewHelper("middleware/grpc", options.logger)
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
-				service string
-				method  string
+				fullMethod string
+				service    string
+				method     string
 			)
 			info, ok := grpc.FromContext(ctx)
 			if ok {
+				fullMethod = info.FullMethod
 				service = path.Dir(info.FullMethod)[1:]
 				method = path.Base(info.FullMethod)
 			}
@@ -48,6 +50,7 @@ func Server(opts ...Option) middleware.Middleware {
 			if err != nil {
 				log.Errorw(
 					"kind", "server",
+					"grpc.path", fullMethod,
 					"grpc.service", service,
 					"grpc.method", method,
 					"grpc.code", errors.Code(err),
@@ -57,6 +60,7 @@ func Server(opts ...Option) middleware.Middleware {
 			}
 			log.Infow(
 				"kind", "server",
+				"grpc.path", fullMethod,
 				"grpc.service", service,
 				"grpc.method", method,
 				"grpc.code", 0,

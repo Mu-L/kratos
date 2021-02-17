@@ -10,14 +10,17 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport"
+
+	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
 // App is an application components lifecycle manager
 type App struct {
-	opts   options
-	ctx    context.Context
-	cancel func()
+	opts     options
+	ctx      context.Context
+	cancel   func()
+	instance *registry.ServiceInstance
 }
 
 // New create an application lifecycle manager.
@@ -31,9 +34,10 @@ func New(opts ...Option) *App {
 	}
 	ctx, cancel := context.WithCancel(options.ctx)
 	return &App{
-		ctx:    ctx,
-		cancel: cancel,
-		opts:   options,
+		opts:     options,
+		ctx:      ctx,
+		cancel:   cancel,
+		instance: serviceInstance(options),
 	}
 }
 
@@ -66,7 +70,7 @@ func (a *App) Run() error {
 		})
 	}
 	if a.opts.registry != nil {
-		if err := a.opts.registry.Register(a.serviceInstance()); err != nil {
+		if err := a.opts.registry.Register(a.instance); err != nil {
 			return err
 		}
 	}
@@ -91,7 +95,7 @@ func (a *App) Run() error {
 // Stop gracefully stops the application.
 func (a *App) Stop() error {
 	if a.opts.registry != nil {
-		if err := a.opts.registry.Deregister(a.serviceInstance()); err != nil {
+		if err := a.opts.registry.Deregister(a.instance); err != nil {
 			return err
 		}
 	}
@@ -101,19 +105,24 @@ func (a *App) Stop() error {
 	return nil
 }
 
-func (a *App) serviceInstance() *registry.ServiceInstance {
-	if len(a.opts.endpoints) == 0 {
-		for _, srv := range a.opts.servers {
+func serviceInstance(o options) *registry.ServiceInstance {
+	if o.id == "" {
+		if id, err := uuid.NewUUID(); err == nil {
+			o.id = id.String()
+		}
+	}
+	if len(o.endpoints) == 0 {
+		for _, srv := range o.servers {
 			if e, err := srv.Endpoint(); err == nil {
-				a.opts.endpoints = append(a.opts.endpoints, e)
+				o.endpoints = append(o.endpoints, e)
 			}
 		}
 	}
 	return &registry.ServiceInstance{
-		ID:        a.opts.id,
-		Name:      a.opts.name,
-		Version:   a.opts.version,
-		Metadata:  a.opts.metadata,
-		Endpoints: a.opts.endpoints,
+		ID:        o.id,
+		Name:      o.name,
+		Version:   o.version,
+		Metadata:  o.metadata,
+		Endpoints: o.endpoints,
 	}
 }
